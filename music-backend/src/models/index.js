@@ -6,12 +6,13 @@ import Artist from './artist.js';
 import Category from './category.js';
 import Favorite from './favorites.js';
 
-// Associations
-User.hasMany(OTP, { foreignKey: 'userId' });
-User.hasMany(Favorite, { foreignKey: 'user_id' });
+User.init(sequelize);
+OTP.init(sequelize);
 Song.hasMany(Favorite, { foreignKey: 'song_id' });
 Favorite.belongsTo(User, { foreignKey: 'user_id' });
 Favorite.belongsTo(Song, { foreignKey: 'song_id' });
+
+User.hasMany(OTP, { foreignKey: 'userId' });
 
 sequelize.sync({ force: false }).then(() => {
   console.log('Database synced');

@@ -1,16 +1,20 @@
-import { Favorite, User, Song } from '../models/index.js';
+import { Favorite, User, Song, Artist } from '../models/index.js';
 
 export const getFavorites = async (req, res) => {
     try {
-        const { user_id } = req.query;
-        if (!user_id) {
-            return res.status(400).json({ error: 'user_id is required' });
-        }
+        const user_id = req.userId;
 
         const favorites = await Favorite.findAll({
             where: { user_id },
             include: [
-                { model: Song, as: 'song', attributes: ['id', 'title', 'artist_id', 'image_url', 'audio_url'] },
+                {
+                    model: Song,
+                    as: 'song',
+                    attributes: ['id', 'title', 'artist_id', 'image_url', 'audio_url'],
+                    include: [
+                        { model: Artist, as: 'artist', attributes: ['name'] }
+                    ]
+                },
             ],
         });
 
@@ -23,16 +27,16 @@ export const getFavorites = async (req, res) => {
 
 export const addFavorite = async (req, res) => {
     try {
-        const { user_id, song_id } = req.body;
-        if (!user_id || !song_id) {
-            return res.status(400).json({ error: 'user_id and song_id are required' });
+        const user_id = req.userId;
+        const { song_id } = req.body;
+        if (!song_id) {
+            return res.status(400).json({ error: 'song_id is required' });
         }
 
-        // Check if user and song exist
-        const user = await User.findByPk(user_id);
+        // Check if song exists
         const song = await Song.findByPk(song_id);
-        if (!user || !song) {
-            return res.status(404).json({ error: 'User or song not found' });
+        if (!song) {
+            return res.status(404).json({ error: 'Song not found' });
         }
 
         // Check if already favorited
@@ -51,9 +55,10 @@ export const addFavorite = async (req, res) => {
 
 export const removeFavorite = async (req, res) => {
     try {
-        const { user_id, song_id } = req.body;
-        if (!user_id || !song_id) {
-            return res.status(400).json({ error: 'user_id and song_id are required' });
+        const user_id = req.userId;
+        const { song_id } = req.body;
+        if (!song_id) {
+            return res.status(400).json({ error: 'song_id is required' });
         }
 
         const favorite = await Favorite.findOne({ where: { user_id, song_id } });

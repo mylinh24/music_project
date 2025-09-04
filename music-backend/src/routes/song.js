@@ -6,7 +6,7 @@ import category from '../models/category.js';
 const router = express.Router();
 
 // Get songs with optional sorting and limit
-router.get('/', async (req, res) => {
+router.get('/songs', async (req, res) => {
     try {
         const { sort, limit } = req.query;
         let order = [];

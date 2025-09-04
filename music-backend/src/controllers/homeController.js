@@ -1,256 +1,215 @@
-import { useState, useEffect, useRef } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { logout } from '../redux/authSlice';
+import { Sequelize } from 'sequelize';
+import Song from '../models/song.js';
+import Artist from '../models/artist.js';
+import Category from '../models/category.js';
+import ListenHistory from '../models/listen_history.js';
+import User from '../models/user.js'; // Import User model
 
-const DEFAULT_AVATAR = 'https://via.placeholder.com/50x50?text=Avatar';
+export const getLatestSongs = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 8;
+    const songs = await Song.findAll({
+      order: [['release_date', 'DESC']],
+      limit: limit,
+      attributes: ['id', 'title', 'audio_url', 'image_url', 'release_date', 'listen_count'],
+      include: [
+        { model: Artist, as: 'artist', attributes: ['name'] },
+        { model: Category, as: 'category', attributes: ['name'] },
+      ],
+    });
 
-const useHomeController = () => {
-    const dispatch = useDispatch();
-    const { isAuthenticated, user, userId, token } = useSelector((state) => state.auth);
-    const [latestSongs, setLatestSongs] = useState([]);
-    const [popularSongs, setPopularSongs] = useState([]);
-    const [recentlyPlayed, setRecentlyPlayed] = useState([]);
-    const [trendingSongs, setTrendingSongs] = useState([]);
-    const [artists, setArtists] = useState([]);
-    const [fullName, setFullName] = useState('');
-    const [avatarUrl, setAvatarUrl] = useState(DEFAULT_AVATAR);
-    const [favorites, setFavorites] = useState([]);
-    const [showLoginPopup, setShowLoginPopup] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [currentSong, setCurrentSong] = useState(null);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [progress, setProgress] = useState(0);
-    const [menuOpen, setMenuOpen] = useState(false);
-    const menuRef = useRef(null);
-    const audioRef = useRef(null);
-    const navigate = useNavigate();
+    const formattedSongs = songs.map(song => ({
+      id: song.id,
+      title: song.title,
+      artist_name: song.artist ? song.artist.name : 'Unknown artist',
+      category_name: song.category ? song.category.name : 'Unknown category',
+      audio_url: song.audio_url,
+      image_url: song.image_url,
+      release_date: song.release_date,
+      listen_count: song.listen_count,
+    }));
 
-    // Format time from seconds to mm:ss
-    const formatTime = (seconds) => {
-        const min = Math.floor(seconds / 60);
-        const sec = Math.floor(seconds % 60);
-        return `${min}:${sec < 10 ? '0' : ''}${sec}`;
-    };
-
-    // Fetch data for all sections and user info
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-
-                const requests = [
-                    axios.get('http://localhost:6969/api/latest-songs?limit=8'),
-                    axios.get('http://localhost:6969/api/popular-songs?limit=6'),
-                    axios.get('http://localhost:6969/api/trending-songs?limit=10'),
-                    isAuthenticated && userId ? axios.get(`http://localhost:6969/api/recently-played?user_id=${userId}&limit=8`) : Promise.resolve({ data: [] }),
-                    axios.get('http://localhost:6969/api/top-artists?limit=8'),
-                    isAuthenticated && userId ? axios.get(`http://localhost:6969/api/favorites?user_id=${userId}`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }) : Promise.resolve({ data: [] }),
-                ];
-
-                if (isAuthenticated && token) {
-                    requests.push(axios.get(`http://localhost:6969/api/auth/me`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }));
-                }
-
-                const [latest, popular, trending, recent, artists, favoritesResponse, userInfo] = await Promise.all(requests);
-
-                setLatestSongs(latest.data || []);
-                setPopularSongs(popular.data || []);
-                setTrendingSongs(trending.data || []);
-                setRecentlyPlayed(recent.data || []);
-                setArtists(artists.data || []);
-                setFavorites(favoritesResponse.data ? favoritesResponse.data.map(fav => fav.song_id) : []);
-                if (userInfo) {
-                    setFullName(`${userInfo.data.firstName || ''} ${userInfo.data.lastName || ''}`.trim() || 'Người dùng');
-                    setAvatarUrl(userInfo.data.avatar || DEFAULT_AVATAR);
-                }
-                setLoading(false);
-            } catch (err) {
-                console.error('Fetch error:', err);
-                setError('Không thể tải dữ liệu. Vui lòng kiểm tra kết nối hoặc thử lại sau.');
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [isAuthenticated, userId, token]);
-
-    // Handle favorite toggle
-    const handleFavoriteToggle = async (song, e) => {
-        e.stopPropagation();
-        if (!isAuthenticated) {
-            setShowLoginPopup(true);
-            return;
-        }
-
-        try {
-            if (favorites.includes(song.id)) {
-                await axios.delete(`http://localhost:6969/api/favorites`, {
-                    data: { user_id: userId, song_id: song.id },
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                setFavorites(favorites.filter(id => id !== song.id));
-                console.log(`Removed favorite: ${song.id}`);
-            } else {
-                await axios.post(`http://localhost:6969/api/favorites`, {
-                    user_id: userId,
-                    song_id: song.id,
-                }, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                setFavorites([...favorites, song.id]);
-                console.log(`Added favorite: ${song.id}`);
-            }
-        } catch (err) {
-            console.error('Favorite toggle error:', err);
-            setError('Không thể cập nhật danh sách yêu thích. Vui lòng thử lại sau.');
-        }
-    };
-
-    // Close menu if clicked outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setMenuOpen(false);
-            }
-        };
-        if (menuOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        } else {
-            document.removeEventListener('mousedown', handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [menuOpen]);
-
-    // Handle audio playback and progress
-    useEffect(() => {
-        const audio = audioRef.current;
-        if (audio) {
-            const handlePlay = () => setIsPlaying(true);
-            const handlePause = () => setIsPlaying(false);
-            const handleTimeUpdate = () => {
-                if (audio.duration) {
-                    setProgress((audio.currentTime / audio.duration) * 100);
-                }
-            };
-            const handleEnded = () => {
-                setIsPlaying(false);
-                setProgress(0);
-            };
-
-            audio.addEventListener('play', handlePlay);
-            audio.addEventListener('pause', handlePause);
-            audio.addEventListener('timeupdate', handleTimeUpdate);
-            audio.addEventListener('ended', handleEnded);
-
-            if (currentSong && !audio.src.includes(currentSong.audio_url)) {
-                audio.src = currentSong.audio_url;
-                if (isPlaying) {
-                    audio.play().catch((err) =>
-                        setError('Không thể phát âm thanh. Vui lòng kiểm tra URL hoặc kết nối.')
-                    );
-                }
-            } else if (isPlaying && audio.paused) {
-                audio.play().catch((err) =>
-                    setError('Không thể phát âm thanh. Vui lòng kiểm tra URL hoặc kết nối.')
-                );
-            } else if (!isPlaying && !audio.paused) {
-                audio.pause();
-            }
-
-            return () => {
-                audio.removeEventListener('play', handlePlay);
-                audio.removeEventListener('pause', handlePause);
-                audio.removeEventListener('timeupdate', handleTimeUpdate);
-                audio.removeEventListener('ended', handleEnded);
-            };
-        }
-    }, [isPlaying, currentSong]);
-
-    const isValidImageUrl = (url) => {
-        return url && !url.startsWith('C:') && url.match(/\.(jpeg|jpg|png|gif)$/i);
-    };
-
-    const handlePlayPause = (song) => {
-        if (!song?.audio_url) {
-            setError('Không tìm thấy URL âm thanh.');
-            return;
-        }
-        if (currentSong?.id === song.id) {
-            setIsPlaying(!isPlaying);
-        } else {
-            setCurrentSong(song);
-            setIsPlaying(true);
-        }
-    };
-
-    const handleCardClick = (songId) => {
-        navigate(`/song/${songId}`);
-    };
-
-    const handleArtistClick = (artistId) => {
-        navigate(`/artist/${artistId}`);
-    };
-
-    const handleProgressChange = (e) => {
-        if (audioRef.current && audioRef.current.duration) {
-            const newTime = (e.target.value / 100) * audioRef.current.duration;
-            audioRef.current.currentTime = newTime;
-            setProgress(e.target.value);
-        }
-    };
-
-    const handleLogout = () => {
-        dispatch(logout());
-        setMenuOpen(false);
-        navigate('/');
-    };
-
-    const closeLoginPopup = () => {
-        setShowLoginPopup(false);
-    };
-
-    return {
-        isAuthenticated,
-        userId,
-        token,
-        latestSongs,
-        popularSongs,
-        recentlyPlayed,
-        trendingSongs,
-        artists,
-        fullName,
-        avatarUrl,
-        favorites,
-        showLoginPopup,
-        loading,
-        error,
-        currentSong,
-        isPlaying,
-        progress,
-        menuOpen,
-        menuRef,
-        audioRef,
-        formatTime,
-        isValidImageUrl,
-        handleFavoriteToggle,
-        handlePlayPause,
-        handleCardClick,
-        handleArtistClick,
-        handleProgressChange,
-        handleLogout,
-        closeLoginPopup,
-        setMenuOpen,
-    };
+    res.json(formattedSongs);
+  } catch (error) {
+    console.error('Lỗi khi lấy bài hát mới nhất:', error);
+    res.status(500).json({ error: 'Không thể tải danh sách bài hát mới nhất.' });
+  }
 };
 
-export default useHomeController;
+export const getPopularSongs = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 6;
+    const songs = await Song.findAll({
+      order: [['listen_count', 'DESC']],
+      limit: limit,
+      attributes: ['id', 'title', 'audio_url', 'image_url', 'release_date', 'listen_count'],
+      include: [
+        { model: Artist, as: 'artist', attributes: ['name'] },
+        { model: Category, as: 'category', attributes: ['name'] },
+      ],
+    });
+
+    const formattedSongs = songs.map(song => ({
+      id: song.id,
+      title: song.title,
+      artist_name: song.artist ? song.artist.name : 'Unknown artist',
+      category_name: song.category ? song.category.name : 'Unknown category',
+      audio_url: song.audio_url,
+      image_url: song.image_url,
+      release_date: song.release_date,
+      listen_count: song.listen_count,
+    }));
+
+    res.json(formattedSongs);
+  } catch (error) {
+    console.error('Lỗi khi lấy bài hát phổ biến:', error);
+    res.status(500).json({ error: 'Không thể tải danh sách bài hát phổ biến.' });
+  }
+};
+
+export const getTrendingSongs = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const trending = await ListenHistory.findAll({
+      attributes: [
+        'song_id',
+        [Sequelize.fn('COUNT', Sequelize.col('song_id')), 'listen_count'],
+      ],
+      where: {
+        listened_at: {
+          [Sequelize.Op.gte]: sevenDaysAgo,
+        },
+      },
+      group: ['song_id'],
+      order: [[Sequelize.literal('listen_count'), 'DESC']],
+      limit: limit,
+      include: [
+        {
+          model: Song,
+          as: 'song',
+          attributes: ['id', 'title', 'audio_url', 'image_url'],
+          include: [
+            { model: Artist, as: 'artist', attributes: ['name'] },
+            { model: Category, as: 'category', attributes: ['name'] },
+          ],
+        },
+      ],
+    });
+
+    const formattedTrending = trending.map(entry => ({
+      id: entry.song.id,
+      title: entry.song.title,
+      artist_name: entry.song.artist ? entry.song.artist.name : 'Unknown artist',
+      category_name: entry.song.category ? entry.song.category.name : 'Unknown category',
+      audio_url: entry.song.audio_url,
+      image_url: entry.song.image_url,
+      listen_count: parseInt(entry.getDataValue('listen_count')),
+    }));
+
+    res.json(formattedTrending);
+  } catch (error) {
+    console.error('Lỗi khi lấy bài hát xu hướng:', error);
+    res.status(500).json({ error: 'Không thể tải danh sách bài hát xu hướng.' });
+  }
+};
+
+export const getRecentlyPlayed = async (req, res) => {
+  try {
+    const userId = req.query.user_id;
+    const limit = parseInt(req.query.limit) || 8;
+    if (!userId) {
+      return res.status(400).json({ error: 'user_id là bắt buộc.' });
+    }
+
+    const history = await ListenHistory.findAll({
+      where: { user_id: userId },
+      include: [
+        {
+          model: Song,
+          as: 'song',
+          attributes: ['id', 'title', 'audio_url', 'image_url'],
+          include: [
+            { model: Artist, as: 'artist', attributes: ['name'] },
+            { model: Category, as: 'category', attributes: ['name'] },
+          ],
+        },
+      ],
+      order: [['listened_at', 'DESC']],
+      limit: limit,
+    });
+
+    const formattedHistory = history.map(entry => ({
+      id: entry.song.id,
+      title: entry.song.title,
+      artist_name: entry.song.artist ? entry.song.artist.name : 'Unknown artist',
+      category_name: entry.song.category ? entry.song.category.name : 'Unknown category',
+      audio_url: entry.song.audio_url,
+      image_url: entry.song.image_url,
+    }));
+
+    // Lọc trùng theo song.id → chỉ giữ lần nghe mới nhất
+    const uniqueSongs = [];
+    const seen = new Set();
+    for (const song of formattedHistory) {
+      if (!seen.has(song.id)) {
+        seen.add(song.id);
+        uniqueSongs.push(song);
+      }
+    }
+
+    res.json(uniqueSongs);
+  } catch (error) {
+    console.error('Lỗi khi lấy bài hát nghe gần đây:', error);
+    res.status(500).json({ error: 'Không thể tải danh sách bài hát nghe gần đây.' });
+  }
+};
+
+export const getTopArtists = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 8;
+    const artists = await Artist.findAll({
+      order: [['total_listens', 'DESC']],
+      limit: limit,
+      attributes: ['id', 'name', 'image_url', 'total_listens'],
+    });
+
+    const formattedArtists = artists.map(artist => ({
+      id: artist.id,
+      name: artist.name,
+      image_url: artist.image_url || null,
+      total_listens: artist.total_listens || 0,
+    }));
+
+    res.json(formattedArtists);
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách nghệ sĩ:', error);
+    res.status(500).json({ error: 'Không thể tải danh sách nghệ sĩ.' });
+  }
+};
+
+// Endpoint để lấy họ tên người dùng cho HomePage
+export const getUserInfo = async (req, res) => {
+  try {
+    const userId = req.query.user_id; // Giả định user_id từ query hoặc middleware xác thực
+    if (!userId) {
+      return res.status(400).json({ error: 'user_id là bắt buộc.' });
+    }
+
+    const user = await User.findByPk(userId, {
+      attributes: ['firstName', 'lastName'],
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng.' });
+    }
+
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Người dùng';
+    res.json({ fullName });
+  } catch (error) {
+    console.error('Lỗi khi lấy thông tin người dùng:', error);
+    res.status(500).json({ error: 'Không thể tải thông tin người dùng.' });
+  }
+};

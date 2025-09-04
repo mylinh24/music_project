@@ -133,7 +133,7 @@ const authSlice = createSlice({
             .addCase(loginUser.fulfilled, (state, action) => {
                 state.loading = false;
                 state.token = action.payload.token;
-                state.user = { id: action.payload.userId };
+                state.userId = action.payload.userId; // Store userId temporarily
                 state.isAuthenticated = true;
                 state.status = 'succeeded';
                 // Note: The user object will be updated when loadUser is called
@@ -149,6 +149,7 @@ const authSlice = createSlice({
             .addCase(loadUser.fulfilled, (state, action) => {
                 state.loading = false;
                 state.user = action.payload;
+                state.userId = action.payload.id;
                 state.isAuthenticated = true;
             })
             .addCase(loadUser.rejected, (state, action) => {

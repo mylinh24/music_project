@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Play, Pause, SkipForward, SkipBack, Heart } from 'lucide-react';
-import SwiperCore from 'swiper';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
+import { logout } from '../redux/authSlice';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -22,7 +22,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="text-center text-red-500 p-6">
-          <h2 className="text-xl font-bold">Đã xảy ra lỗi</h2>
+          <h2 className="text-2xl font-bold">Đã xảy ra lỗi</h2>
           <p>Xin vui lòng thử lại sau hoặc liên hệ hỗ trợ.</p>
           <button
             onClick={() => this.setState({ hasError: false })}
@@ -37,8 +37,11 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+const DEFAULT_AVATAR = 'https://via.placeholder.com/50x50?text=Avatar';
+
 const HomePage = () => {
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const { isAuthenticated, user, userId, token } = useSelector((state) => state.auth);
   const [latestSongs, setLatestSongs] = useState([]);
   const [popularSongs, setPopularSongs] = useState([]);
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
@@ -46,11 +49,15 @@ const HomePage = () => {
   const [artists, setArtists] = useState([]);
   const [favorites, setFavorites] = useState([]); // State for favorites
   const [showLoginPopup, setShowLoginPopup] = useState(false); // State for login popup
+  const [fullName, setFullName] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState(DEFAULT_AVATAR);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
   const audioRef = useRef(null);
   const navigate = useNavigate();
 
@@ -61,71 +68,47 @@ const HomePage = () => {
     return `${min}:${sec < 10 ? '0' : ''}${sec}`;
   };
 
-  // Fetch data for all sections
+  // Fetch data for all sections và họ tên người dùng
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Fetch favorites if authenticated
-        if (isAuthenticated && user?.id) {
-          const favoritesResponse = await axios.get(`http://localhost:6969/api/favorites?user_id=${user.id}`);
-          if (favoritesResponse.data && Array.isArray(favoritesResponse.data)) {
-            setFavorites(favoritesResponse.data.map(fav => fav.song_id));
-            console.log('Favorites:', favoritesResponse.data); // Debug
-          } else {
-            setFavorites([]);
-          }
+        const requests = [
+          axios.get('http://localhost:6969/api/latest-songs?limit=8'),
+          axios.get('http://localhost:6969/api/popular-songs?limit=6'),
+          axios.get('http://localhost:6969/api/trending-songs?limit=10'),
+          isAuthenticated && userId ? axios.get(`http://localhost:6969/api/recently-played?user_id=${userId}&limit=8`) : Promise.resolve({ data: [] }),
+          axios.get('http://localhost:6969/api/top-artists?limit=8'),
+        ];
+
+        if (isAuthenticated && token) {
+          requests.push(axios.get(`http://localhost:6969/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }));
+          // Fetch favorites
+          requests.push(axios.get(`http://localhost:6969/api/favorites`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }));
         }
 
-        // Latest Songs: 8 bài mới nhất theo release_date
-        const latestResponse = await axios.get('http://localhost:6969/api/songs?sort=release_date&limit=8');
-        if (latestResponse.data && Array.isArray(latestResponse.data)) {
-          setLatestSongs(latestResponse.data);
-          console.log('Latest songs:', latestResponse.data); // Debug
+        const [latest, popular, trending, recent, artist, userInfo, favoritesResponse] = await Promise.all(requests);
+
+        setLatestSongs(latest.data || []);
+        setPopularSongs(popular.data || []);
+        setTrendingSongs(trending.data || []);
+        setRecentlyPlayed(recent.data || []);
+        setArtists(artist.data || []);
+        if (userInfo) {
+          setFullName(`${userInfo.data.firstName || ''} ${userInfo.data.lastName || ''}`.trim() || 'Người dùng');
+          setAvatarUrl(userInfo.data.avatar || DEFAULT_AVATAR);
+        }
+        if (favoritesResponse && favoritesResponse.data && Array.isArray(favoritesResponse.data)) {
+          setFavorites(favoritesResponse.data.map(fav => fav.song_id));
         } else {
-          setLatestSongs([]);
+          setFavorites([]);
         }
-
-        // Popular Songs: 6 bài nghe nhiều nhất theo listen_count
-        const popularResponse = await axios.get('http://localhost:6969/api/songs?sort=listen_count&limit=6');
-        if (popularResponse.data && Array.isArray(popularResponse.data)) {
-          setPopularSongs(popularResponse.data);
-        } else {
-          setPopularSongs([]);
-        }
-
-        // Trending Songs: 10 bài xu hướng trong 7 ngày
-        const sevenDaysAgo = new Date('2025-09-02T18:06:00+07:00');
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const trendingResponse = await axios.get(`http://localhost:6969/api/trending-songs?start_date=${sevenDaysAgo.toISOString()}&limit=10`);
-        if (trendingResponse.data && Array.isArray(trendingResponse.data)) {
-          setTrendingSongs(trendingResponse.data);
-        } else {
-          setTrendingSongs([]);
-        }
-
-        // Recently Played: 8 bài nghe gần đây theo listened_at
-        if (isAuthenticated && user?.id) {
-          const recentResponse = await axios.get(`http://localhost:6969/api/listen-history?user_id=${user.id}&sort=listened_at&limit=8`);
-          if (recentResponse.data && Array.isArray(recentResponse.data)) {
-            setRecentlyPlayed(recentResponse.data);
-          } else {
-            setRecentlyPlayed([]);
-          }
-        } else {
-          setRecentlyPlayed([]);
-        }
-
-        // Artists: Fetch top 8 artists
-        const artistsResponse = await axios.get('http://localhost:6969/api/artists?limit=8');
-        if (artistsResponse.data && Array.isArray(artistsResponse.data)) {
-          setArtists(artistsResponse.data);
-        } else {
-          setArtists([]);
-        }
-
         setLoading(false);
       } catch (err) {
         console.error('Fetch error:', err);
@@ -135,36 +118,24 @@ const HomePage = () => {
     };
 
     fetchData();
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, userId, token]);
 
-  // Handle favorite toggle
-  const handleFavoriteToggle = async (song, e) => {
-    e.stopPropagation();
-    if (!isAuthenticated) {
-      setShowLoginPopup(true);
-      return;
-    }
-
-    try {
-      if (favorites.includes(song.id)) {
-        await axios.delete(`http://localhost:6969/api/favorites`, {
-          data: { user_id: user.id, song_id: song.id },
-        });
-        setFavorites(favorites.filter(id => id !== song.id));
-        console.log(`Removed favorite: ${song.id}`); // Debug
-      } else {
-        await axios.post(`http://localhost:6969/api/favorites`, {
-          user_id: user.id,
-          song_id: song.id,
-        });
-        setFavorites([...favorites, song.id]);
-        console.log(`Added favorite: ${song.id}`); // Debug
+  // Close menu if clicked outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
       }
-    } catch (err) {
-      console.error('Favorite toggle error:', err);
-      setError('Không thể cập nhật danh sách yêu thích. Vui lòng thử lại sau.');
+    };
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
     }
-  };
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   // Handle audio playback and progress
   useEffect(() => {
@@ -228,11 +199,41 @@ const HomePage = () => {
     }
   };
 
+  // Handle favorite toggle
+  const handleFavoriteToggle = async (song, e) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      setShowLoginPopup(true);
+      return;
+    }
+
+    try {
+      if (favorites.includes(song.id)) {
+        await axios.delete(`http://localhost:6969/api/favorites`, {
+          data: { song_id: song.id },
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setFavorites(favorites.filter(id => id !== song.id));
+      } else {
+        await axios.post(
+          `http://localhost:6969/api/favorites`,
+          { song_id: song.id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setFavorites([...favorites, song.id]);
+      }
+    } catch (err) {
+      console.error('Favorite toggle error:', err);
+      setError('Không thể cập nhật danh sách yêu thích. Vui lòng thử lại sau.');
+    }
+  };
+
   const handleCardClick = (songId) => {
     navigate(`/song/${songId}`);
   };
 
   const handleArtistClick = (artistId) => {
+    if (!artistId) return;
     navigate(`/artist/${artistId}`);
   };
 
@@ -242,6 +243,12 @@ const HomePage = () => {
       audioRef.current.currentTime = newTime;
       setProgress(e.target.value);
     }
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    setMenuOpen(false);
+    navigate('/');
   };
 
   const closeLoginPopup = () => {
@@ -313,11 +320,46 @@ const HomePage = () => {
           {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold">Website Nghe Nhạc Trực Tuyến</h1>
-            <div className="flex items-center gap-4">
+            <div className="relative" ref={menuRef}>
               {isAuthenticated ? (
-                <Link to="/profile" className="text-green-500 hover:underline font-semibold">
-                  Tài khoản
-                </Link>
+                <div className="flex items-center gap-2">
+                  <img
+                    src={avatarUrl}
+                    alt="Avatar"
+                    className="w-10 h-10 rounded-full object-cover"
+                    onError={(e) => (e.target.src = DEFAULT_AVATAR)}
+                  />
+                  <button
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    className="text-green-500 hover:underline font-semibold"
+                  >
+                    {fullName || 'Tài khoản'}
+                  </button>
+                  {menuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg z-10">
+                      <Link
+                        to="/profile"
+                        className="block px-4 py-2 text-white hover:bg-gray-700"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Profile
+                      </Link>
+                      <Link
+                        to="/favorites"
+                        className="block px-4 py-2 text-white hover:bg-gray-700"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Bài hát yêu thích của tôi
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 text-white hover:bg-gray-700"
+                      >
+                        Đăng xuất
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <Link to="/login" className="text-green-500 hover:underline font-semibold">
                   Đăng nhập
@@ -436,7 +478,7 @@ const HomePage = () => {
           </section>
 
           {/* Recently Played Songs */}
-          {isAuthenticated && recentlyPlayed.length > 0 && (
+          {isAuthenticated && userId && recentlyPlayed.length > 0 && (
             <section className="mb-12">
               <h2 className="text-2xl font-bold mb-4">Nghe Gần Đây</h2>
               <Swiper

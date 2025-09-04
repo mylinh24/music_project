@@ -4,7 +4,9 @@ import RegisterPage from './pages/RegisterPage.jsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import HomePage from './pages/HomePage.jsx';
-
+import TestPage from './pages/TestPage.jsx';
+import ArtistDetailPage from './pages/ArtistDetailPage.jsx';
+import FavoritePage from './pages/FavoritePage.jsx';
 
 function App() {
   return (
@@ -15,7 +17,9 @@ function App() {
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/home-page" element={<HomePage />} />
       <Route path="/" element={<HomePage />} />
-
+      <Route path="/test" element={<TestPage />} />
+      <Route path="/artist/:artistId" element={<ArtistDetailPage />} />
+      <Route path="/favorites" element={<FavoritePage />} />
     </Routes>
   );
 }
