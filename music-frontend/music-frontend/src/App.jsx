@@ -5,6 +5,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import HomePage from './pages/HomePage.jsx';
 
+
 function App() {
   return (
     <Routes>
@@ -14,6 +15,7 @@ function App() {
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/home-page" element={<HomePage />} />
       <Route path="/" element={<HomePage />} />
+
     </Routes>
   );
 }

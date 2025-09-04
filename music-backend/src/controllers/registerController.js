@@ -14,7 +14,9 @@ const register = async (req, res) => {
             return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ email, password, firstName, lastName' });
         }
         const existingUser = await User.findOne({ where: { email } });
-        if (existingUser) return res.status(400).json({ message: 'Email already exists' });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email đã được sử dụng' });
+        }
 
         const hashPassword = bcrypt.hashSync(password, salt);
         const newUser = await User.create({
@@ -22,8 +24,9 @@ const register = async (req, res) => {
             password: hashPassword,
             firstName,
             lastName,
+            isVerified: false, // Đảm bảo trường isVerified được thiết lập
         });
-        console.log('User created:', newUser.id);
+        console.log('User created:', { id: newUser.id, email: newUser.email });
 
         const otp = generateOTP();
         console.log('Generated OTP:', otp);
@@ -38,10 +41,10 @@ const register = async (req, res) => {
         });
         console.log('OTP saved to database');
 
-        res.status(201).json({ message: 'User registered. Check email for OTP.', userId: newUser.id });
+        res.status(201).json({ message: 'Đăng ký thành công. Vui lòng kiểm tra email để lấy OTP.', userId: newUser.id });
     } catch (error) {
         console.error('Lỗi đăng ký:', error.message, error.stack);
-        res.status(500).json({ message: 'Error in registration', error: error.message });
+        res.status(500).json({ message: 'Lỗi server khi đăng ký', error: error.message });
     }
 };
 

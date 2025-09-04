@@ -21,13 +21,35 @@ export const verifyOTP = createAsyncThunk('auth/verifyOTP', async ({ userId, otp
     }
 });
 
-export const loginUser = createAsyncThunk('auth/login', async (credentials, { rejectWithValue }) => {
+export const loginUser = createAsyncThunk('auth/login', async (credentials, { rejectWithValue, dispatch }) => {
     try {
         const response = await axios.post(`${API_URL}/login`, credentials);
         localStorage.setItem('token', response.data.token);
+
+        // Load user profile after successful login
+        dispatch(loadUser());
+
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response.data.message);
+    }
+});
+
+export const loadUser = createAsyncThunk('auth/loadUser', async (_, { rejectWithValue }) => {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('No token found');
+        }
+        const response = await axios.get(`${API_URL}/me`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        localStorage.removeItem('token');
+        return rejectWithValue('Failed to load user');
     }
 });
 
@@ -114,11 +136,28 @@ const authSlice = createSlice({
                 state.user = { id: action.payload.userId };
                 state.isAuthenticated = true;
                 state.status = 'succeeded';
+                // Note: The user object will be updated when loadUser is called
             })
             .addCase(loginUser.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
                 state.status = 'failed';
+            })
+            .addCase(loadUser.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(loadUser.fulfilled, (state, action) => {
+                state.loading = false;
+                state.user = action.payload;
+                state.isAuthenticated = true;
+            })
+            .addCase(loadUser.rejected, (state, action) => {
+                state.loading = false;
+                state.token = null;
+                state.isAuthenticated = false;
+                state.user = null;
+                state.userId = null;
+                state.error = action.payload;
             })
             .addCase(forgotPassword.pending, (state) => {
                 state.loading = true;
