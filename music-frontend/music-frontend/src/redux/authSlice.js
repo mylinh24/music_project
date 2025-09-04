@@ -21,6 +21,12 @@ export const verifyOTP = createAsyncThunk('auth/verifyOTP', async ({ userId, otp
     }
 });
 
+<<<<<<< HEAD
+export const loginUser = createAsyncThunk('auth/login', async (credentials, { rejectWithValue }) => {
+    try {
+        const response = await axios.post(`${API_URL}/login`, credentials);
+        localStorage.setItem('token', response.data.token);
+=======
 export const loginUser = createAsyncThunk('auth/login', async (credentials, { rejectWithValue, dispatch }) => {
     try {
         const response = await axios.post(`${API_URL}/login`, credentials);
@@ -29,12 +35,15 @@ export const loginUser = createAsyncThunk('auth/login', async (credentials, { re
         // Load user profile after successful login
         dispatch(loadUser());
 
+>>>>>>> 14f427b2 (second commit)
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response.data.message);
     }
 });
 
+<<<<<<< HEAD
+=======
 export const loadUser = createAsyncThunk('auth/loadUser', async (_, { rejectWithValue }) => {
     try {
         const token = localStorage.getItem('token');
@@ -53,6 +62,7 @@ export const loadUser = createAsyncThunk('auth/loadUser', async (_, { rejectWith
     }
 });
 
+>>>>>>> 14f427b2 (second commit)
 export const forgotPassword = createAsyncThunk('auth/forgotPassword', async (email, { rejectWithValue }) => {
     try {
         const response = await axios.post(`${API_URL}/forgot-password`, { email });
@@ -133,23 +143,31 @@ const authSlice = createSlice({
             .addCase(loginUser.fulfilled, (state, action) => {
                 state.loading = false;
                 state.token = action.payload.token;
+<<<<<<< HEAD
+                state.user = { id: action.payload.userId };
+                state.isAuthenticated = true;
+                state.status = 'succeeded';
+=======
                 state.userId = action.payload.userId; // Store userId temporarily
                 state.isAuthenticated = true;
                 state.status = 'succeeded';
                 // Note: The user object will be updated when loadUser is called
+>>>>>>> 14f427b2 (second commit)
             })
             .addCase(loginUser.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
                 state.status = 'failed';
             })
+<<<<<<< HEAD
+=======
             .addCase(loadUser.pending, (state) => {
                 state.loading = true;
             })
             .addCase(loadUser.fulfilled, (state, action) => {
                 state.loading = false;
                 state.user = action.payload;
-                state.userId = action.payload.id;
+                state.userId = action.payload.id || null;
                 state.isAuthenticated = true;
             })
             .addCase(loadUser.rejected, (state, action) => {
@@ -160,6 +178,7 @@ const authSlice = createSlice({
                 state.userId = null;
                 state.error = action.payload;
             })
+>>>>>>> 14f427b2 (second commit)
             .addCase(forgotPassword.pending, (state) => {
                 state.loading = true;
                 state.error = null;

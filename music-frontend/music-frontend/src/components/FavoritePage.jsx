@@ -8,7 +8,7 @@ import { Navigation, Pagination, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
-import { logout } from '../redux/authSlice';
+import { logout, loadUser } from '../redux/authSlice';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -51,6 +51,8 @@ const Favorite = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [volume, setVolume] = useState(1); // Volume ranges from 0 to 1
+  const [playbackSpeed, setPlaybackSpeed] = useState(1); // Default playback speed is 1x
   const menuRef = useRef(null);
   const audioRef = useRef(null);
   const navigate = useNavigate();
@@ -62,10 +64,28 @@ const Favorite = () => {
     return `${min}:${sec < 10 ? '0' : ''}${sec}`;
   };
 
+  // Handle volume change
+  const handleVolumeChange = (e) => {
+    const newVolume = e.target.value / 100;
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+    }
+  };
+
+  // Handle playback speed change
+  const handlePlaybackSpeedChange = (e) => {
+    const newSpeed = parseFloat(e.target.value);
+    setPlaybackSpeed(newSpeed);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = newSpeed;
+    }
+  };
+
   // Lấy danh sách bài hát yêu thích và thông tin người dùng
   useEffect(() => {
     const fetchData = async () => {
-      if (!isAuthenticated || !userId || !token) {
+      if (!token) {
         setError('Vui lòng đăng nhập để xem danh sách yêu thích.');
         setLoading(false);
         return;
@@ -74,6 +94,10 @@ const Favorite = () => {
       try {
         setLoading(true);
         setError(null);
+
+        if (!isAuthenticated || !userId) {
+          await dispatch(loadUser()).unwrap();
+        }
 
         const requests = [
           axios.get(`http://localhost:6969/api/favorites`, {
@@ -87,19 +111,24 @@ const Favorite = () => {
         const [favoritesResponse, userInfo] = await Promise.all(requests);
 
         if (favoritesResponse.data && Array.isArray(favoritesResponse.data)) {
-          setFavorites(favoritesResponse.data.map(fav => ({
-            id: fav.song.id,
-            title: fav.song.title,
-            artist_name: fav.song.artist?.name || 'Không có nghệ sĩ',
-            image_url: fav.song.image_url,
-            audio_url: fav.song.audio_url,
-          })));
+          setFavorites(
+            favoritesResponse.data.map((fav) => ({
+              id: fav.song.id,
+              title: fav.song.title,
+              artist_name: fav.song.artist?.name || 'Không có nghệ sĩ',
+              image_url: fav.song.image_url,
+              audio_url: fav.song.audio_url,
+            }))
+          );
         } else {
           setFavorites([]);
         }
 
         if (userInfo) {
-          setFullName(`${userInfo.data.firstName || ''} ${userInfo.data.lastName || ''}`.trim() || 'Người dùng');
+          setFullName(
+            `${userInfo.data.firstName || ''} ${userInfo.data.lastName || ''}`.trim() ||
+            'Người dùng'
+          );
           setAvatarUrl(userInfo.data.avatar || DEFAULT_AVATAR);
         }
 
@@ -112,7 +141,7 @@ const Favorite = () => {
     };
 
     fetchData();
-  }, [isAuthenticated, userId, token]);
+  }, [isAuthenticated, userId, token, dispatch]);
 
   // Đóng menu nếu click bên ngoài
   useEffect(() => {
@@ -131,7 +160,7 @@ const Favorite = () => {
     };
   }, [menuOpen]);
 
-  // Xử lý phát nhạc và tiến trình
+  // 🔥 Xử lý phát nhạc và autoplay bài kế tiếp
   useEffect(() => {
     const audio = audioRef.current;
     if (audio) {
@@ -143,8 +172,8 @@ const Favorite = () => {
         }
       };
       const handleEnded = () => {
-        setIsPlaying(false);
         setProgress(0);
+        handleNextSong(); // tự động sang bài kế tiếp
       };
 
       audio.addEventListener('play', handlePlay);
@@ -154,13 +183,17 @@ const Favorite = () => {
 
       if (currentSong && !audio.src.includes(currentSong.audio_url)) {
         audio.src = currentSong.audio_url;
+        audio.volume = volume; // Set initial volume
+        audio.playbackRate = playbackSpeed; // Set initial playback speed
         if (isPlaying) {
-          audio.play().catch((err) =>
+          audio.play().catch(() =>
             setError('Không thể phát âm thanh. Vui lòng kiểm tra URL hoặc kết nối.')
           );
         }
       } else if (isPlaying && audio.paused) {
-        audio.play().catch((err) =>
+        audio.volume = volume; // Update volume
+        audio.playbackRate = playbackSpeed; // Update playback speed
+        audio.play().catch(() =>
           setError('Không thể phát âm thanh. Vui lòng kiểm tra URL hoặc kết nối.')
         );
       } else if (!isPlaying && !audio.paused) {
@@ -174,7 +207,7 @@ const Favorite = () => {
         audio.removeEventListener('ended', handleEnded);
       };
     }
-  }, [isPlaying, currentSong]);
+  }, [isPlaying, currentSong, favorites, volume, playbackSpeed]);
 
   const isValidImageUrl = (url) => {
     return url && !url.startsWith('C:') && url.match(/\.(jpeg|jpg|png|gif)$/i);
@@ -201,12 +234,12 @@ const Favorite = () => {
     }
 
     try {
-      if (favorites.some(fav => fav.id === song.id)) {
+      if (favorites.some((fav) => fav.id === song.id)) {
         await axios.delete(`http://localhost:6969/api/favorites`, {
           data: { song_id: song.id },
           headers: { Authorization: `Bearer ${token}` },
         });
-        setFavorites(favorites.filter(fav => fav.id !== song.id));
+        setFavorites(favorites.filter((fav) => fav.id !== song.id));
       } else {
         await axios.post(
           `http://localhost:6969/api/favorites`,
@@ -239,6 +272,26 @@ const Favorite = () => {
     navigate('/');
   };
 
+  const handleNextSong = () => {
+    if (!currentSong || favorites.length === 0) return;
+    const currentIndex = favorites.findIndex((song) => song.id === currentSong.id);
+    if (currentIndex !== -1) {
+      const nextIndex = (currentIndex + 1) % favorites.length;
+      setCurrentSong(favorites[nextIndex]);
+      setIsPlaying(true);
+    }
+  };
+
+  const handlePrevSong = () => {
+    if (!currentSong || favorites.length === 0) return;
+    const currentIndex = favorites.findIndex((song) => song.id === currentSong.id);
+    if (currentIndex !== -1) {
+      const prevIndex = currentIndex === 0 ? favorites.length - 1 : currentIndex - 1;
+      setCurrentSong(favorites[prevIndex]);
+      setIsPlaying(true);
+    }
+  };
+
   const renderSongCard = (song) => (
     <div
       className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-200 w-48"
@@ -246,14 +299,22 @@ const Favorite = () => {
     >
       {song?.image_url && (
         <img
-          src={isValidImageUrl(song.image_url) ? song.image_url : 'https://via.placeholder.com/200x200?text=No+Image'}
+          src={
+            isValidImageUrl(song.image_url)
+              ? song.image_url
+              : 'https://via.placeholder.com/200x200?text=No+Image'
+          }
           alt={song?.title || 'No title'}
           className="w-full h-40 object-cover"
-          onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')}
+          onError={(e) =>
+            (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')
+          }
         />
       )}
       <div className="p-4">
-        <h3 className="text-white font-semibold truncate">{song?.title || 'Không có tiêu đề'}</h3>
+        <h3 className="text-white font-semibold truncate">
+          {song?.title || 'Không có tiêu đề'}
+        </h3>
         <p className="text-gray-400 text-sm">{song?.artist_name || 'Không có nghệ sĩ'}</p>
       </div>
       <div
@@ -264,7 +325,11 @@ const Favorite = () => {
         }}
       >
         <button className="bg-green-500 text-white rounded-full p-3 hover:bg-green-600">
-          {currentSong?.id === song.id && isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+          {currentSong?.id === song.id && isPlaying ? (
+            <Pause className="w-6 h-6" />
+          ) : (
+            <Play className="w-6 h-6" />
+          )}
         </button>
       </div>
       <button
@@ -272,7 +337,10 @@ const Favorite = () => {
         onClick={(e) => handleFavoriteToggle(song, e)}
       >
         <Heart
-          className={`w-5 h-5 ${favorites.some(fav => fav.id === song.id) ? 'text-red-500 fill-red-500' : 'text-white'}`}
+          className={`w-5 h-5 ${favorites.some((fav) => fav.id === song.id)
+            ? 'text-red-500 fill-red-500'
+            : 'text-white'
+            }`}
         />
       </button>
     </div>
@@ -366,12 +434,21 @@ const Favorite = () => {
           {/* Audio Player at Footer */}
           {currentSong && (
             <div className="fixed bottom-0 left-0 w-full bg-gray-800 p-2 flex items-center justify-between z-50">
-              <div className="flex items-center">
+              <div
+                className="flex items-center cursor-pointer hover:bg-gray-700 p-2 rounded"
+                onClick={() => navigate(`/song/${currentSong.id}`)}
+              >
                 <img
-                  src={isValidImageUrl(currentSong.image_url) ? currentSong.image_url : 'https://via.placeholder.com/50x50?text=No+Image'}
+                  src={
+                    isValidImageUrl(currentSong.image_url)
+                      ? currentSong.image_url
+                      : 'https://via.placeholder.com/50x50?text=No+Image'
+                  }
                   alt={currentSong.title}
                   className="w-12 h-12 object-cover rounded-md mr-3"
-                  onError={(e) => (e.target.src = 'https://via.placeholder.com/50x50?text=No+Image')}
+                  onError={(e) =>
+                    (e.target.src = 'https://via.placeholder.com/50x50?text=No+Image')
+                  }
                 />
                 <div>
                   <h3 className="text-white font-semibold truncate w-32">{currentSong.title}</h3>
@@ -381,14 +458,25 @@ const Favorite = () => {
               <div className="flex items-center gap-4">
                 <button
                   className="text-gray-400 hover:text-white"
+                  onClick={handlePrevSong}
+                >
+                  <SkipBack className="w-6 h-6" />
+                </button>
+                <button
+                  className="text-gray-400 hover:text-white"
                   onClick={() => setIsPlaying(!isPlaying)}
                 >
                   {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
                 </button>
-                <SkipBack className="w-6 h-6 text-gray-400 hover:text-white cursor-pointer" />
-                <SkipForward className="w-6 h-6 text-gray-400 hover:text-white cursor-pointer" />
+                <button
+                  className="text-gray-400 hover:text-white"
+                  onClick={handleNextSong}
+                >
+                  <SkipForward className="w-6 h-6" />
+                </button>
                 <div className="text-gray-400 text-sm">
-                  {formatTime(audioRef.current?.currentTime || 0)} / {formatTime(audioRef.current?.duration || 0)}
+                  {formatTime(audioRef.current?.currentTime || 0)} /{' '}
+                  {formatTime(audioRef.current?.duration || 0)}
                 </div>
                 <input
                   type="range"
@@ -398,6 +486,32 @@ const Favorite = () => {
                   onChange={handleProgressChange}
                   className="w-24"
                 />
+                {/* Volume Control */}
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400 text-sm">Âm lượng</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={volume * 100}
+                    onChange={handleVolumeChange}
+                    className="w-16"
+                  />
+                </div>
+                {/* Playback Speed Control */}
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400 text-sm">Tốc độ</span>
+                  <select
+                    value={playbackSpeed}
+                    onChange={handlePlaybackSpeedChange}
+                    className="bg-gray-700 text-white rounded p-1"
+                  >
+                    <option value="0.5">0.5x</option>
+                    <option value="1">1x</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2">2x</option>
+                  </select>
+                </div>
               </div>
               <audio ref={audioRef} />
             </div>

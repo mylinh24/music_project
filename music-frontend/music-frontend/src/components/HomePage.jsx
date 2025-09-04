@@ -1,3 +1,82 @@
+<<<<<<< HEAD
+import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
+
+const HomePage = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useSelector((state) => state.auth);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Danh sách bài hát mẫu
+  const songs = [
+    { id: 1, title: 'Hơi Thở Của Gió', artist: 'Ca sĩ A', url: 'https://example.com/song1.mp3', genre: 'Ballad' },
+    { id: 2, title: 'Mùa Hè Rực Rỡ', artist: 'Ca sĩ B', url: 'https://example.com/song2.mp3', genre: 'Pop' },
+    { id: 3, title: 'Đêm Thành Phố', artist: 'Ca sĩ C', url: 'https://example.com/song3.mp3', genre: 'Rock' },
+  ];
+
+  // Lọc bài hát dựa trên tìm kiếm
+  const filteredSongs = songs.filter(
+    (song) =>
+      song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      song.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      song.genre.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-gray-100">
+      <div className="container mx-auto p-6">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Website Nghe Nhạc Trực Tuyến</h1>
+          <div className="flex items-center gap-4">
+            {isAuthenticated ? (
+              <Link to="/profile" className="text-blue-500 hover:underline font-semibold">
+                Tài khoản
+              </Link>
+            ) : (
+              <Link to="/login" className="text-blue-500 hover:underline font-semibold">
+                Đăng nhập
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Thanh tìm kiếm */}
+        <div className="mb-6">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Tìm kiếm bài hát, ca sĩ, hoặc thể loại..."
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* Danh sách bài hát */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredSongs.length > 0 ? (
+            filteredSongs.map((song) => (
+              <div
+                key={song.id}
+                className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
+              >
+                <h3 className="text-lg font-semibold text-gray-800">{song.title}</h3>
+                <p className="text-gray-600">{song.artist}</p>
+                <p className="text-sm text-gray-500">Thể loại: {song.genre}</p>
+                <audio controls className="w-full mt-3">
+                  <source src={song.url} type="audio/mpeg" />
+                  Trình duyệt của bạn không hỗ trợ phát âm thanh.
+                </audio>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-gray-600 col-span-full">Không tìm thấy bài hát nào.</p>
+          )}
+        </div>
+      </div>
+    </div>
+=======
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
@@ -57,6 +136,10 @@ const HomePage = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [currentSongList, setCurrentSongList] = useState([]);
+  const [currentSongIndex, setCurrentSongIndex] = useState(-1);
+  const [volume, setVolume] = useState(1); // Volume ranges from 0 to 1
+  const [playbackSpeed, setPlaybackSpeed] = useState(1); // Default playback speed is 1x
   const menuRef = useRef(null);
   const audioRef = useRef(null);
   const navigate = useNavigate();
@@ -66,6 +149,24 @@ const HomePage = () => {
     const min = Math.floor(seconds / 60);
     const sec = Math.floor(seconds % 60);
     return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+  };
+
+  // Handle volume change
+  const handleVolumeChange = (e) => {
+    const newVolume = e.target.value / 100;
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+    }
+  };
+
+  // Handle playback speed change
+  const handlePlaybackSpeedChange = (e) => {
+    const newSpeed = parseFloat(e.target.value);
+    setPlaybackSpeed(newSpeed);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = newSpeed;
+    }
   };
 
   // Fetch data for all sections và họ tên người dùng
@@ -120,6 +221,23 @@ const HomePage = () => {
     fetchData();
   }, [isAuthenticated, userId, token]);
 
+  // Add effect to refetch recently played when userId changes (e.g., after login)
+  React.useEffect(() => {
+    const fetchRecentlyPlayed = async () => {
+      if (isAuthenticated && userId && token) {
+        try {
+          const response = await axios.get(`http://localhost:6969/api/recently-played?user_id=${userId}&limit=8`);
+          setRecentlyPlayed(response.data || []);
+        } catch (error) {
+          console.error('Error fetching recently played:', error);
+        }
+      } else {
+        setRecentlyPlayed([]);
+      }
+    };
+    fetchRecentlyPlayed();
+  }, [isAuthenticated, userId, token]);
+
   // Close menu if clicked outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -151,6 +269,8 @@ const HomePage = () => {
       const handleEnded = () => {
         setIsPlaying(false);
         setProgress(0);
+        // Auto-play next song in the list
+        handleNextSong();
       };
 
       audio.addEventListener('play', handlePlay);
@@ -160,12 +280,16 @@ const HomePage = () => {
 
       if (currentSong && !audio.src.includes(currentSong.audio_url)) {
         audio.src = currentSong.audio_url;
+        audio.volume = volume; // Set initial volume
+        audio.playbackRate = playbackSpeed; // Set initial playback speed
         if (isPlaying) {
           audio.play().catch((err) =>
             setError('Không thể phát âm thanh. Vui lòng kiểm tra URL hoặc kết nối.')
           );
         }
       } else if (isPlaying && audio.paused) {
+        audio.volume = volume; // Update volume
+        audio.playbackRate = playbackSpeed; // Update playback speed
         audio.play().catch((err) =>
           setError('Không thể phát âm thanh. Vui lòng kiểm tra URL hoặc kết nối.')
         );
@@ -180,13 +304,13 @@ const HomePage = () => {
         audio.removeEventListener('ended', handleEnded);
       };
     }
-  }, [isPlaying, currentSong]);
+  }, [isPlaying, currentSong, volume, playbackSpeed]);
 
   const isValidImageUrl = (url) => {
     return url && !url.startsWith('C:') && url.match(/\.(jpeg|jpg|png|gif)$/i);
   };
 
-  const handlePlayPause = (song) => {
+  const handlePlayPause = (song, songList = []) => {
     if (!song?.audio_url) {
       setError('Không tìm thấy URL âm thanh.');
       return;
@@ -196,6 +320,10 @@ const HomePage = () => {
     } else {
       setCurrentSong(song);
       setIsPlaying(true);
+      if (songList.length > 0) {
+        setCurrentSongList(songList);
+        setCurrentSongIndex(songList.findIndex(s => s.id === song.id));
+      }
     }
   };
 
@@ -229,6 +357,7 @@ const HomePage = () => {
   };
 
   const handleCardClick = (songId) => {
+    if (!songId) return;
     navigate(`/song/${songId}`);
   };
 
@@ -245,6 +374,24 @@ const HomePage = () => {
     }
   };
 
+  const handleNextSong = () => {
+    if (currentSongList.length === 0 || currentSongIndex === -1) return;
+    const nextIndex = (currentSongIndex + 1) % currentSongList.length;
+    const nextSong = currentSongList[nextIndex];
+    setCurrentSong(nextSong);
+    setCurrentSongIndex(nextIndex);
+    setIsPlaying(true);
+  };
+
+  const handlePrevSong = () => {
+    if (currentSongList.length === 0 || currentSongIndex === -1) return;
+    const prevIndex = currentSongIndex === 0 ? currentSongList.length - 1 : currentSongIndex - 1;
+    const prevSong = currentSongList[prevIndex];
+    setCurrentSong(prevSong);
+    setCurrentSongIndex(prevIndex);
+    setIsPlaying(true);
+  };
+
   const handleLogout = () => {
     dispatch(logout());
     setMenuOpen(false);
@@ -257,7 +404,7 @@ const HomePage = () => {
 
   const renderSongCard = (song) => (
     <div
-      className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-200 w-48"
+      className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-200 w-48 cursor-pointer"
       onClick={() => handleCardClick(song?.id || '')}
     >
       {song?.image_url && (
@@ -272,17 +419,21 @@ const HomePage = () => {
         <h3 className="text-white font-semibold truncate">{song?.title || 'Không có tiêu đề'}</h3>
         <p className="text-gray-400 text-sm">{song?.artist_name || 'Không có nghệ sĩ'}</p>
       </div>
-      <div
-        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+      <button
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-green-500 text-white rounded-full p-3 hover:bg-green-600"
         onClick={(e) => {
           e.stopPropagation();
-          handlePlayPause(song);
+          // Determine which list the song belongs to and pass it
+          let songList = [];
+          if (trendingSongs.some(s => s.id === song.id)) songList = trendingSongs;
+          else if (latestSongs.some(s => s.id === song.id)) songList = latestSongs;
+          else if (popularSongs.some(s => s.id === song.id)) songList = popularSongs;
+          else if (recentlyPlayed.some(s => s.id === song.id)) songList = recentlyPlayed;
+          handlePlayPause(song, songList);
         }}
       >
-        <button className="bg-green-500 text-white rounded-full p-3 hover:bg-green-600">
-          {currentSong?.id === song.id && isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-        </button>
-      </div>
+        {currentSong?.id === song.id && isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+      </button>
       <button
         className="absolute top-2 right-2 z-10 p-2 rounded-full bg-gray-900 bg-opacity-50 hover:bg-opacity-75 transition-opacity duration-200"
         onClick={(e) => handleFavoriteToggle(song, e)}
@@ -505,7 +656,7 @@ const HomePage = () => {
         {/* Audio Player at Footer */}
         {currentSong && (
           <div className="fixed bottom-0 left-0 w-full bg-gray-800 p-2 flex items-center justify-between z-50">
-            <div className="flex items-center">
+            <div className="flex items-center cursor-pointer hover:bg-gray-700 p-2 rounded" onClick={() => navigate(`/song/${currentSong.id}`)}>
               <img
                 src={isValidImageUrl(currentSong.image_url) ? currentSong.image_url : 'https://via.placeholder.com/50x50?text=No+Image'}
                 alt={currentSong.title}
@@ -520,12 +671,22 @@ const HomePage = () => {
             <div className="flex items-center gap-4">
               <button
                 className="text-gray-400 hover:text-white"
+                onClick={handlePrevSong}
+              >
+                <SkipBack className="w-6 h-6" />
+              </button>
+              <button
+                className="text-gray-400 hover:text-white"
                 onClick={() => setIsPlaying(!isPlaying)}
               >
                 {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
               </button>
-              <SkipBack className="w-6 h-6 text-gray-400 hover:text-white cursor-pointer" />
-              <SkipForward className="w-6 h-6 text-gray-400 hover:text-white cursor-pointer" />
+              <button
+                className="text-gray-400 hover:text-white"
+                onClick={handleNextSong}
+              >
+                <SkipForward className="w-6 h-6" />
+              </button>
               <div className="text-gray-400 text-sm">
                 {formatTime(audioRef.current?.currentTime || 0)} / {formatTime(audioRef.current?.duration || 0)}
               </div>
@@ -537,12 +698,39 @@ const HomePage = () => {
                 onChange={handleProgressChange}
                 className="w-24"
               />
+              {/* Volume Control */}
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 text-sm">Âm lượng</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={volume * 100}
+                  onChange={handleVolumeChange}
+                  className="w-16"
+                />
+              </div>
+              {/* Playback Speed Control */}
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 text-sm">Tốc độ</span>
+                <select
+                  value={playbackSpeed}
+                  onChange={handlePlaybackSpeedChange}
+                  className="bg-gray-700 text-white rounded p-1"
+                >
+                  <option value="0.5">0.5x</option>
+                  <option value="1">1x</option>
+                  <option value="1.5">1.5x</option>
+                  <option value="2">2x</option>
+                </select>
+              </div>
             </div>
             <audio ref={audioRef} />
           </div>
         )}
       </div>
     </ErrorBoundary>
+>>>>>>> 14f427b2 (second commit)
   );
 };
 

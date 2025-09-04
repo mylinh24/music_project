@@ -1,3 +1,4 @@
+// music-backend/src/controllers/artistController.js
 import { Sequelize } from 'sequelize';
 import Artist from '../models/artist.js';
 import Song from '../models/song.js';

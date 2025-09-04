@@ -2,6 +2,7 @@ import express from 'express';
 import song from '../models/song.js';
 import artist from '../models/artist.js';
 import category from '../models/category.js';
+import { getSongDetail } from '../controllers/songController.js';
 
 const router = express.Router();
 
@@ -46,5 +47,8 @@ router.get('/songs', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+// Get song detail by ID
+router.get('/song/:id', getSongDetail);
 
 export default router;

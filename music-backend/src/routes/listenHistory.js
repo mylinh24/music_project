@@ -138,4 +138,28 @@ router.get('/artists', async (req, res) => {
     }
 });
 
+// Record a listen
+router.post('/listen-history', async (req, res) => {
+    try {
+        const { user_id, song_id } = req.body;
+        if (!user_id || !song_id) {
+            return res.status(400).json({ error: 'user_id and song_id are required' });
+        }
+
+        await listenHistory.create({
+            user_id,
+            song_id,
+            listened_at: new Date(),
+        });
+
+        // Increment song's listen_count
+        await song.increment('listen_count', { by: 1, where: { id: song_id } });
+
+        res.status(201).json({ message: 'Listen recorded' });
+    } catch (error) {
+        console.error('Error recording listen:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 export default router;

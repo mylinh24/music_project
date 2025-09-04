@@ -7,11 +7,11 @@ const resetPassword = async (req, res) => {
     const { userId, otp, newPassword } = req.body;
     try {
         // Tìm OTP mới nhất cho user, sắp xếp theo thời gian tạo (id giảm dần)
-        const otpRecord = await OTP.findOne({
+        const otpRecord = await OTP.findOne({ 
             where: { userId, type: 'forgot' },
             order: [['id', 'DESC']] // Lấy OTP mới nhất
         });
-
+        
         if (!otpRecord) return res.status(400).json({ message: 'OTP không tồn tại' });
         if (otpRecord.expiresAt < new Date()) return res.status(400).json({ message: 'OTP đã hết hạn' });
 
@@ -22,7 +22,7 @@ const resetPassword = async (req, res) => {
         const user = await User.findByPk(userId);
         user.password = hashPassword;
         await user.save();
-
+        
         // Xóa tất cả OTP của user này sau khi reset thành công
         await OTP.destroy({ where: { userId, type: 'forgot' } });
 

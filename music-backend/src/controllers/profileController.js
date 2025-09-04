@@ -1,11 +1,18 @@
+<<<<<<< HEAD
+=======
 // music-backend/src/controllers/profileController.js
+>>>>>>> 14f427b2 (second commit)
 import jwt from 'jsonwebtoken';
 import { User } from '../models/index.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
+<<<<<<< HEAD
+const getProfile = async (req, res) => {
+=======
 export const getProfile = async (req, res) => {
+>>>>>>> 14f427b2 (second commit)
   try {
     // Lấy token từ header Authorization
     const token = req.headers.authorization?.split(' ')[1];
@@ -19,13 +26,20 @@ export const getProfile = async (req, res) => {
 
     // Tìm người dùng trong cơ sở dữ liệu
     const user = await User.findByPk(userId, {
+<<<<<<< HEAD
+      attributes: ['id', 'email', 'firstName', 'lastName', 'isVerified'],
+=======
       attributes: ['id', 'email', 'firstName', 'lastName', 'isVerified', 'avatar'],
+>>>>>>> 14f427b2 (second commit)
     });
 
     if (!user) {
       return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
     }
 
+<<<<<<< HEAD
+    // Trả về thông tin người dùng
+=======
     // Trả về thông tin người dùng bao gồm avatar
     let avatarData = null;
     if (user.avatar) {
@@ -40,13 +54,17 @@ export const getProfile = async (req, res) => {
       avatarData = `data:${mime};base64,${user.avatar.toString('base64')}`;
     }
 
+>>>>>>> 14f427b2 (second commit)
     res.status(200).json({
       id: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
       isVerified: user.isVerified,
+<<<<<<< HEAD
+=======
       avatar: avatarData,
+>>>>>>> 14f427b2 (second commit)
     });
   } catch (error) {
     console.error('Lỗi khi lấy thông tin hồ sơ:', error.message, error.stack);
@@ -57,6 +75,9 @@ export const getProfile = async (req, res) => {
   }
 };
 
+<<<<<<< HEAD
+export { getProfile };
+=======
 
 // Endpoint để cập nhật avatar
 export const updateAvatar = async (req, res) => {
@@ -158,3 +179,4 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({ error: 'Không thể cập nhật thông tin.' });
   }
 };
+>>>>>>> 14f427b2 (second commit)
