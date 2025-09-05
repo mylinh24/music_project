@@ -14,11 +14,7 @@ const login = async (req, res) => {
         if (!isValid) return res.status(400).json({ message: 'Invalid email or password' });
 
         const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-<<<<<<< HEAD
-        res.status(200).json({ token });
-=======
         res.status(200).json({ token, userId: user.id });
->>>>>>> 14f427b2 (second commit)
     } catch (error) {
         res.status(500).json({ message: 'Error in login', error: error.message });
     }

@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 //src/models/otp.js
->>>>>>> 14f427b2 (second commit)
 import { DataTypes, Model } from 'sequelize';
 
 class OTP extends Model {

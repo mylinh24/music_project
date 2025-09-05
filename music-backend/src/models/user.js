@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 //src/models/user.js
->>>>>>> 14f427b2 (second commit)
 import { DataTypes, Model } from 'sequelize';
 
 class User extends Model {
@@ -27,13 +24,10 @@ class User extends Model {
                 type: DataTypes.BOOLEAN,
                 defaultValue: false,
             },
-<<<<<<< HEAD
-=======
             avatar: {
                 type: DataTypes.BLOB('long'), // lưu dữ liệu nhị phân (ảnh, file)
                 allowNull: true,
             },
->>>>>>> 14f427b2 (second commit)
         }, {
             sequelize,
             modelName: 'User',
