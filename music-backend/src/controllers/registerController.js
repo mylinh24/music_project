@@ -13,32 +13,53 @@ const register = async (req, res) => {
         if (!email || !password || !firstName || !lastName) {
             return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ email, password, firstName, lastName' });
         }
+
         const existingUser = await User.findOne({ where: { email } });
-        if (existingUser) return res.status(400).json({ message: 'Email already exists' });
+        if (existingUser && existingUser.isVerified) {
+            return res.status(400).json({ message: 'Email đã được sử dụng và xác thực' });
+        }
 
-        const hashPassword = bcrypt.hashSync(password, salt);
-        const newUser = await User.create({
-            email,
-            password: hashPassword,
-            firstName,
-            lastName,
-        });
-        console.log('User created:', newUser.id);
+        let user;
+        if (existingUser && !existingUser.isVerified) {
+            // Cập nhật thông tin user chưa xác thực
+            const hashPassword = bcrypt.hashSync(password, salt);
+            await existingUser.update({
+                password: hashPassword,
+                firstName,
+                lastName,
+            });
+            user = existingUser;
+        } else {
+            // Tạo user mới
+            const hashPassword = bcrypt.hashSync(password, salt);
+            user = await User.create({
+                email,
+                password: hashPassword,
+                firstName,
+                lastName,
+                isVerified: false,
+            });
+        }
+        console.log('User created/updated:', user.id);
 
+        // Xóa OTP cũ (nếu có)
+        await OTP.destroy({ where: { userId: user.id, type: 'register' } });
+
+        // Tạo và gửi OTP mới
         const otp = generateOTP();
         console.log('Generated OTP:', otp);
         await sendOTP(email, otp, 'register');
         console.log('OTP sent to:', email);
 
         await OTP.create({
-            userId: newUser.id,
+            userId: user.id,
             otp: bcrypt.hashSync(otp, salt),
             expiresAt: new Date(Date.now() + 5 * 60 * 1000),
             type: 'register',
         });
         console.log('OTP saved to database');
 
-        res.status(201).json({ message: 'User registered. Check email for OTP.', userId: newUser.id });
+        res.status(201).json({ message: 'User registered. Check email for OTP.', userId: user.id });
     } catch (error) {
         console.error('Lỗi đăng ký:', error.message, error.stack);
         res.status(500).json({ message: 'Error in registration', error: error.message });

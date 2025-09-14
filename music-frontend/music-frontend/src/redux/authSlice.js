@@ -71,6 +71,15 @@ export const resetPassword = createAsyncThunk('auth/resetPassword', async ({ use
     }
 });
 
+export const resendOTP = createAsyncThunk('auth/resendOTP', async (email, { rejectWithValue }) => {
+    try {
+        const response = await axios.post(`${API_URL}/resend-otp`, { email });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data.message);
+    }
+});
+
 const authSlice = createSlice({
     name: 'auth',
     initialState: {
@@ -78,7 +87,7 @@ const authSlice = createSlice({
         isAuthenticated: !!localStorage.getItem('token'),
         user: null,
         userId: null,
-        status: 'idle', // idle, loading, succeeded, verified, failed
+        status: 'idle',
         loading: false,
         error: null,
     },
@@ -189,7 +198,23 @@ const authSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
                 state.status = 'failed';
+            })
+            .addCase(resendOTP.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+                state.status = 'loading';
+            })
+            .addCase(resendOTP.fulfilled, (state, action) => {
+                state.loading = false;
+                state.userId = action.payload.userId;
+                state.status = 'succeeded';
+            })
+            .addCase(resendOTP.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+                state.status = 'failed';
             });
+
     },
 });
 

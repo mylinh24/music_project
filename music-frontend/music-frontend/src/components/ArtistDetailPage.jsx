@@ -1,424 +1,162 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
-import axios from 'axios';
-import { Play, Pause, SkipForward, SkipBack } from "lucide-react";
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '../redux/authSlice';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
+import { setCurrentSongList } from '../redux/playerSlice';
+import Header from './Header';
+import SongCard from './SongCard';
 
-// Error Boundary Component
 class ErrorBoundary extends React.Component {
-  state = { hasError: false, error: null };
-
+  state = { hasError: false };
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+    return { hasError: true };
   }
-
   render() {
     if (this.state.hasError) {
-      return (
-        <div className="text-center text-red-500 p-6">
-          <h2 className="text-2xl font-bold">Đã xảy ra lỗi</h2>
-          <p>Xin vui lòng thử lại sau hoặc liên hệ hỗ trợ.</p>
-          <button
-            onClick={() => this.setState({ hasError: false })}
-            className="mt-4 bg-green-500 text-white p-2 rounded hover:bg-green-600"
-          >
-            Thử lại
-          </button>
-        </div>
-      );
+      return <h1 className="text-red-500 text-center">Đã xảy ra lỗi.</h1>;
     }
     return this.props.children;
   }
 }
 
-const DEFAULT_AVATAR = 'https://via.placeholder.com/50x50?text=Avatar';
+const DEFAULT_ARTIST_IMAGE = 'https://via.placeholder.com/300x300?text=Artist';
 
 const ArtistDetailPage = () => {
   const { artistId } = useParams();
-  const navigate = useNavigate();
-  const location = useLocation();
   const dispatch = useDispatch();
   const { isAuthenticated, token } = useSelector((state) => state.auth);
   const [artistData, setArtistData] = useState(null);
+  const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentSong, setCurrentSong] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentSongList, setCurrentSongList] = useState([]);
-  const [currentSongIndex, setCurrentSongIndex] = useState(-1);
-  const [progress, setProgress] = useState(0);
-  const [fullName, setFullName] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState(DEFAULT_AVATAR);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [volume, setVolume] = useState(1); // Volume ranges from 0 to 1
-  const [playbackSpeed, setPlaybackSpeed] = useState(1); // Default playback speed is 1x
-  const audioRef = React.useRef(null);
-  const menuRef = useRef(null);
-
-  // Handle volume change
-  const handleVolumeChange = (e) => {
-    const newVolume = e.target.value / 100;
-    setVolume(newVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume;
-    }
-  };
-
-  // Handle playback speed change
-  const handlePlaybackSpeedChange = (e) => {
-    const newSpeed = parseFloat(e.target.value);
-    setPlaybackSpeed(newSpeed);
-    if (audioRef.current) {
-      audioRef.current.playbackRate = newSpeed;
-    }
-  };
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   useEffect(() => {
-    const fetchArtistDetail = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.get(`http://localhost:6969/api/artist/${artistId}`);
-        setArtistData(response.data);
+        const [artistResponse, favoritesResponse] = await Promise.all([
+          axios.get(`http://localhost:6969/api/artist/${artistId}`),
+          isAuthenticated && token
+            ? axios.get(`http://localhost:6969/api/favorites`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            : Promise.resolve({ data: [] }),
+        ]);
+        setArtistData(artistResponse.data);
+        setFavorites(favoritesResponse.data.map((fav) => fav.song_id) || []);
+        const validSongs = artistResponse.data.songs.filter(
+          (song) => song && song.id && song.audio_url
+        );
+        dispatch(setCurrentSongList(validSongs));
         setLoading(false);
       } catch (err) {
-        console.error('Failed to fetch artist detail:', err);
-        setError('Không thể tải chi tiết nghệ sĩ. Vui lòng thử lại.');
+        console.error('Lỗi khi tải dữ liệu ArtistDetailPage:', err);
+        setError('Không thể tải dữ liệu.');
         setLoading(false);
       }
     };
-
-    if (artistId) {
-      fetchArtistDetail();
-    }
-  }, [artistId]);
-
-  // Fetch user info if authenticated
-  useEffect(() => {
-    if (isAuthenticated && token) {
-      const fetchUserInfo = async () => {
-        try {
-          const response = await axios.get(`http://localhost:6969/api/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setFullName(`${response.data.firstName || ''} ${response.data.lastName || ''}`.trim() || 'Người dùng');
-          setAvatarUrl(response.data.avatar || DEFAULT_AVATAR);
-        } catch (error) {
-          console.error('Error fetching user info:', error);
-        }
-      };
-      fetchUserInfo();
-    }
-  }, [isAuthenticated, token]);
-
-  // Close menu if clicked outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    };
-    if (menuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [menuOpen]);
+    fetchData();
+  }, [artistId, isAuthenticated, token, dispatch]);
 
   const isValidImageUrl = (url) => {
     return url && !url.startsWith('C:') && url.match(/\.(jpeg|jpg|png|gif)$/i);
   };
 
-  // Định dạng thời gian từ giây sang mm:ss
-  const formatTime = (seconds) => {
-    const min = Math.floor(seconds / 60);
-    const sec = Math.floor(seconds % 60);
-    return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+  const safeArtist = artistData?.artist || {
+    id: artistId,
+    name: 'Nghệ sĩ không xác định',
+    image_url: DEFAULT_ARTIST_IMAGE,
+    total_listens: 0,
   };
-
-  const handlePlayPause = (song) => {
-    if (!song?.audio_url) {
-      setError('Không tìm thấy URL âm thanh.');
-      return;
-    }
-    if (currentSong?.id === song.id) {
-      setIsPlaying(!isPlaying);
-    } else {
-      setCurrentSong(song);
-      setCurrentSongList(artistData?.songs || []);
-      setCurrentSongIndex(artistData?.songs.findIndex(s => s.id === song.id) ?? -1);
-      setIsPlaying(true);
-    }
-  };
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      const handlePlay = () => setIsPlaying(true);
-      const handlePause = () => setIsPlaying(false);
-      const handleTimeUpdate = () => {
-        if (audio.duration) {
-          setProgress((audio.currentTime / audio.duration) * 100);
-        }
-      };
-      const handleEnded = () => {
-        setIsPlaying(false);
-        setProgress(0);
-        handleNextSong();
-      };
-
-      audio.addEventListener('play', handlePlay);
-      audio.addEventListener('pause', handlePause);
-      audio.addEventListener('timeupdate', handleTimeUpdate);
-      audio.addEventListener('ended', handleEnded);
-
-      if (currentSong && !audio.src.includes(currentSong.audio_url)) {
-        audio.src = currentSong.audio_url;
-        audio.volume = volume; // Set initial volume
-        audio.playbackRate = playbackSpeed; // Set initial playback speed
-        if (isPlaying) {
-          audio.play().catch((err) =>
-            setError('Không thể phát âm thanh. Vui lòng kiểm tra URL hoặc kết nối.')
-          );
-        }
-      } else if (isPlaying && audio.paused) {
-        audio.volume = volume; // Update volume
-        audio.playbackRate = playbackSpeed; // Update playback speed
-        audio.play().catch((err) =>
-          setError('Không thể phát âm thanh. Vui lòng kiểm tra URL hoặc kết nối.')
-        );
-      } else if (!isPlaying && !audio.paused) {
-        audio.pause();
-      }
-
-      return () => {
-        audio.removeEventListener('play', handlePlay);
-        audio.removeEventListener('pause', handlePause);
-        audio.removeEventListener('timeupdate', handleTimeUpdate);
-        audio.removeEventListener('ended', handleEnded);
-      };
-    }
-  }, [isPlaying, currentSong, volume, playbackSpeed]);
-
-  const handleSongClick = (songId) => {
-    navigate(`/song/${songId}`);
-  };
-
-  const handleNextSong = () => {
-    if (currentSongList.length === 0 || currentSongIndex === -1) return;
-    const nextIndex = (currentSongIndex + 1) % currentSongList.length;
-    const nextSong = currentSongList[nextIndex];
-    setCurrentSong(nextSong);
-    setCurrentSongIndex(nextIndex);
-    setIsPlaying(true);
-  };
-
-  const handlePrevSong = () => {
-    if (currentSongList.length === 0 || currentSongIndex === -1) return;
-    const prevIndex = currentSongIndex === 0 ? currentSongList.length - 1 : currentSongIndex - 1;
-    const prevSong = currentSongList[prevIndex];
-    setCurrentSong(prevSong);
-    setCurrentSongIndex(prevIndex);
-    setIsPlaying(true);
-  };
-
-  const handleProgressChange = (e) => {
-    if (audioRef.current && audioRef.current.duration) {
-      const newTime = (e.target.value / 100) * audioRef.current.duration;
-      audioRef.current.currentTime = newTime;
-      setProgress(e.target.value);
-    }
-  };
-
-  const handleLogout = () => {
-    dispatch(logout());
-    setMenuOpen(false);
-    navigate('/');
-  };
-
-  if (loading) return <p className="text-center text-gray-400">Đang tải...</p>;
-  if (error) return <p className="text-center text-red-500">{error}</p>;
+  const safeSongs = artistData?.songs || [];
 
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-gray-900 text-white">
-        {/* User Info Header */}
-        {isAuthenticated && (
-          <div className="bg-gray-800 p-4 flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <img
-                src={avatarUrl}
-                alt="Avatar"
-                className="w-10 h-10 rounded-full object-cover"
-                onError={(e) => (e.target.src = DEFAULT_AVATAR)}
-              />
-              <span className="text-white font-medium">{fullName}</span>
-            </div>
-            <div className="relative" ref={menuRef}>
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="text-white hover:text-gray-300 focus:outline-none"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-gray-700 rounded-md shadow-lg z-50">
+        <div className="container mx-auto px-4 py-8 pt-20 pb-24">
+          <Header title="Nghệ Sĩ" />
+
+          {/* Popup yêu cầu đăng nhập */}
+          {showLoginPopup && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <p className="mb-4">
+                  Vui lòng đăng nhập để thêm bài hát vào danh sách yêu thích.
+                </p>
+                <div className="flex justify-end gap-4">
                   <Link
-                    to="/profile"
-                    className="block px-4 py-2 text-sm text-white hover:bg-gray-600"
-                    onClick={() => setMenuOpen(false)}
+                    to="/login"
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                   >
-                    Hồ sơ
-                  </Link>
-                  <Link
-                    to="/favorites"
-                    className="block px-4 py-2 text-sm text-white hover:bg-gray-600"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    Yêu thích
+                    Đăng nhập
                   </Link>
                   <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-600"
+                    onClick={() => setShowLoginPopup(false)}
+                    className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
                   >
-                    Đăng xuất
+                    Hủy
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Loading + Error */}
+          {loading && (
+            <p className="text-center text-gray-400">Đang tải...</p>
+          )}
+          {error && <p className="text-center text-red-500">{error}</p>}
+
+          {/* Thông tin nghệ sĩ */}
+          <div className="flex flex-col items-center gap-6 mb-12 justify-center">
+            <img
+              src={
+                isValidImageUrl(safeArtist.image_url)
+                  ? safeArtist.image_url
+                  : DEFAULT_ARTIST_IMAGE
+              }
+              alt={safeArtist.name}
+              className="w-48 h-48 rounded-full object-cover"
+              onError={(e) => (e.target.src = DEFAULT_ARTIST_IMAGE)}
+            />
+            <div>
+              <h2 className="text-3xl font-bold">{safeArtist.name}</h2>
+              {safeArtist.total_listens > 0 && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Tổng lượt nghe: {safeArtist.total_listens.toLocaleString()}
+                </p>
               )}
             </div>
           </div>
-        )}
-        <div className="container mx-auto p-6">
-          {artistData && (
-            <>
-              <div className="mb-8 text-center">
-                <h1 className="text-4xl font-bold">{artistData.artist.name}</h1>
-                <img
-                  src={isValidImageUrl(artistData.artist.image_url) ? artistData.artist.image_url : 'https://via.placeholder.com/200x200?text=No+Image'}
-                  alt={artistData.artist.name}
-                  className="w-48 h-48 rounded-full object-cover mx-auto mt-4"
-                  onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')}
-                />
-                <p className="mt-2">Tổng lượt nghe: {artistData.artist.total_listens}</p>
-              </div>
-              <h2 className="text-2xl font-bold mb-4">Danh sách bài hát</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {artistData.songs.map((song) => (
-                  <div
-                    key={song.id}
-                    className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-200"
-                    onClick={() => handleSongClick(song.id)}
-                  >
-                    {song.image_url && (
-                      <img
-                        src={isValidImageUrl(song.image_url) ? song.image_url : 'https://via.placeholder.com/200x200?text=No+Image'}
-                        alt={song.title}
-                        className="w-full h-40 object-cover"
-                        onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')}
-                      />
-                    )}
-                    <div className="p-4">
-                      <h3 className="text-white font-semibold truncate">{song.title}</h3>
-                      <p className="text-gray-400 text-sm">Lượt nghe: {song.listen_count}</p>
-                    </div>
-                    <div
-                      className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePlayPause(song);
-                      }}
-                    >
-                      <button className="bg-green-500 text-white rounded-full p-3 hover:bg-green-600">
-                        {currentSong?.id === song.id && isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-                      </button>
-                    </div>
-                  </div>
+
+          {/* Danh sách bài hát */}
+          {safeSongs.length > 0 ? (
+            <section className="mb-12">
+              <h3 className="text-2xl font-bold mb-4">Danh Sách Bài Hát</h3>
+              <div className="flex flex-col gap-3">
+                {safeSongs.map((song) => (
+                  <SongCard
+                    key={song?.id || ''}
+                    song={song}
+                    songList={safeSongs}
+                    setFavorites={setFavorites}
+                    favorites={favorites}
+                    setError={setError}
+                    setShowLoginPopup={setShowLoginPopup}
+                  />
                 ))}
               </div>
-            </>
+            </section>
+          ) : (
+            !loading && (
+              <p className="text-center text-gray-400">
+                Không có bài hát nào của nghệ sĩ này.
+              </p>
+            )
           )}
         </div>
-        {/* Audio Player at Footer */}
-        {currentSong && (
-          <div className="fixed bottom-0 left-0 w-full bg-gray-800 p-2 flex items-center justify-between z-50">
-            <div className="flex items-center cursor-pointer hover:bg-gray-700 p-2 rounded" onClick={() => navigate(`/song/${currentSong.id}`)}>
-              <img
-                src={isValidImageUrl(currentSong.image_url) ? currentSong.image_url : 'https://via.placeholder.com/50x50?text=No+Image'}
-                alt={currentSong.title}
-                className="w-12 h-12 object-cover rounded-md mr-3"
-                onError={(e) => (e.target.src = 'https://via.placeholder.com/50x50?text=No+Image')}
-              />
-              <div>
-                <h3 className="text-white font-semibold truncate w-32">{currentSong.title}</h3>
-                <p className="text-gray-400 text-sm">{currentSong.artist_name}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                className="text-gray-400 hover:text-white"
-                onClick={handlePrevSong}
-              >
-                <SkipBack className="w-6 h-6" />
-              </button>
-              <button
-                className="text-gray-400 hover:text-white"
-                onClick={() => setIsPlaying(!isPlaying)}
-              >
-                {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-              </button>
-              <button
-                className="text-gray-400 hover:text-white"
-                onClick={handleNextSong}
-              >
-                <SkipForward className="w-6 h-6" />
-              </button>
-              <div className="text-gray-400 text-sm">
-                {formatTime(audioRef.current?.currentTime || 0)} / {formatTime(audioRef.current?.duration || 0)}
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={progress}
-                onChange={handleProgressChange}
-                className="w-24"
-              />
-              {/* Volume Control */}
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">Âm lượng</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={volume * 100}
-                  onChange={handleVolumeChange}
-                  className="w-16"
-                />
-              </div>
-              {/* Playback Speed Control */}
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">Tốc độ</span>
-                <select
-                  value={playbackSpeed}
-                  onChange={handlePlaybackSpeedChange}
-                  className="bg-gray-700 text-white rounded p-1"
-                >
-                  <option value="0.5">0.5x</option>
-                  <option value="1">1x</option>
-                  <option value="1.5">1.5x</option>
-                  <option value="2">2x</option>
-                </select>
-              </div>
-            </div>
-            <audio ref={audioRef} />
-          </div>
-        )}
       </div>
     </ErrorBoundary>
   );

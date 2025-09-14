@@ -2,6 +2,47 @@ import Song from '../models/song.js';
 import Artist from '../models/artist.js';
 import Category from '../models/category.js';
 
+export const getSongsByCategory = async (req, res) => {
+  try {
+    const categoryName = req.params.category;
+    if (!categoryName) {
+      return res.status(400).json({ error: 'Category name is required.' });
+    }
+
+    const songs = await Song.findAll({
+      include: [
+        {
+          model: Category,
+          as: 'category',
+          where: { name: categoryName },
+          attributes: [],
+        },
+        {
+          model: Artist,
+          as: 'artist',
+          attributes: ['name'],
+        },
+      ],
+      attributes: ['id', 'title', 'audio_url', 'image_url', 'listen_count', 'release_date'],
+    });
+
+    const formattedSongs = songs.map(song => ({
+      id: song.id,
+      title: song.title,
+      artist_name: song.artist ? song.artist.name : 'Unknown artist',
+      audio_url: song.audio_url,
+      image_url: song.image_url,
+      listen_count: song.listen_count,
+      release_date: song.release_date,
+    }));
+
+    res.json(formattedSongs);
+  } catch (error) {
+    console.error('Error fetching songs by category:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 export const getSongDetail = async (req, res) => {
   try {
     const songId = req.params.id;

@@ -3,6 +3,20 @@ import { Sequelize } from 'sequelize';
 import Artist from '../models/artist.js';
 import Song from '../models/song.js';
 
+export const getAllArtists = async (req, res) => {
+  try {
+    const artists = await Artist.findAll({
+      attributes: ['id', 'name', 'image_url', 'total_listens'],
+      order: [['total_listens', 'DESC']],
+    });
+
+    res.json(artists);
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách nghệ sĩ:', error);
+    res.status(500).json({ error: 'Không thể tải danh sách nghệ sĩ.' });
+  }
+};
+
 export const getArtistDetail = async (req, res) => {
   try {
     const artistId = req.params.artistId;

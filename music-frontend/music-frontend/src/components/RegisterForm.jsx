@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { registerUser, verifyOTP } from "../redux/authSlice";
+import { registerUser, verifyOTP, resendOTP } from "../redux/authSlice";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -28,10 +28,22 @@ const RegisterForm = () => {
     dispatch(verifyOTP({ userId, otp }));
   };
 
+  const handleResendOTP = (e) => {
+    e.preventDefault();
+    console.log('Sending resend OTP request with email:', email); // Thêm log để debug
+    if (!email) {
+      toast.error("Vui lòng nhập email trước khi gửi lại OTP!");
+      return;
+    }
+    dispatch(resendOTP(email))
+      .then(() => toast.success("OTP đã được gửi lại! Vui lòng kiểm tra email."))
+      .catch(() => toast.error("Gửi lại OTP thất bại, vui lòng thử lại!"));
+  };
+
   useEffect(() => {
     if (status === "verified") {
       toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
-      setTimeout(() => navigate("/login"), 2000); // chờ 2s rồi điều hướng
+      setTimeout(() => navigate("/login"), 2000);
     }
     if (error) {
       toast.error(error);
@@ -126,10 +138,19 @@ const RegisterForm = () => {
             >
               {loading ? "Đang xử lý..." : "Xác thực OTP"}
             </button>
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={handleResendOTP}
+                className="text-blue-500 hover:underline"
+                disabled={loading}
+              >
+                Gửi lại OTP
+              </button>
+            </div>
           </form>
         )}
       </div>
-      {/* Toast container để hiện thông báo */}
       <ToastContainer position="top-center" autoClose={2000} />
     </div>
   );

@@ -1,5 +1,9 @@
 import bcrypt from 'bcryptjs';
 import { User, OTP } from '../models/index.js';
+import { sendOTP } from '../services/emailService.js';
+
+const salt = bcrypt.genSaltSync(10);
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 const verifyOTP = async (req, res) => {
     const { userId, otp } = req.body;
@@ -21,4 +25,46 @@ const verifyOTP = async (req, res) => {
     }
 };
 
-export { verifyOTP };
+const resendOTP = async (req, res) => {
+  const { email } = req.body;
+  console.log('Resend OTP request received:', { email }); // Thêm log để debug
+  try {
+    if (!email) {
+      console.log('Missing email in request');
+      return res.status(400).json({ message: 'Vui lòng cung cấp email' });
+    }
+
+    // Kiểm tra xem email có tồn tại và chưa được xác thực
+    const user = await User.findOne({ where: { email, isVerified: false } });
+    if (!user) {
+      console.log('User not found or already verified:', { email });
+      return res.status(400).json({ message: 'Email không tồn tại hoặc đã được xác thực' });
+    }
+
+    // Xóa OTP cũ (nếu có)
+    await OTP.destroy({ where: { userId: user.id, type: 'register' } });
+    console.log('Old OTPs deleted for user:', user.id);
+
+    // Tạo OTP mới
+    const otp = generateOTP();
+    console.log('Generated new OTP:', otp);
+    await sendOTP(email, otp, 'register');
+    console.log('OTP sent to:', email);
+
+    // Lưu OTP mới vào database
+    await OTP.create({
+      userId: user.id,
+      otp: bcrypt.hashSync(otp, salt),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+      type: 'register',
+    });
+    console.log('New OTP saved to database');
+
+    res.status(200).json({ message: 'OTP đã được gửi lại. Vui lòng kiểm tra email.', userId: user.id });
+  } catch (error) {
+    console.error('Lỗi gửi lại OTP:', error.message, error.stack);
+    res.status(500).json({ message: 'Lỗi khi gửi lại OTP', error: error.message });
+  }
+};
+
+export { verifyOTP, resendOTP };
