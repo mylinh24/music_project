@@ -11,7 +11,7 @@ export const getLatestSongs = async (req, res) => {
     const songs = await Song.findAll({
       order: [['release_date', 'DESC']],
       limit: limit,
-      attributes: ['id', 'title', 'audio_url', 'image_url', 'release_date', 'listen_count'],
+      attributes: ['id', 'title', 'audio_url', 'image_url', 'release_date', 'listen_count', 'exclusive'],
       include: [
         { model: Artist, as: 'artist', attributes: ['name'] },
         { model: Category, as: 'category', attributes: ['name'] },
@@ -27,6 +27,7 @@ export const getLatestSongs = async (req, res) => {
       image_url: song.image_url,
       release_date: song.release_date,
       listen_count: song.listen_count,
+      exclusive: song.exclusive,
     }));
 
     res.json(formattedSongs);
@@ -42,7 +43,7 @@ export const getPopularSongs = async (req, res) => {
     const songs = await Song.findAll({
       order: [['listen_count', 'DESC']],
       limit: limit,
-      attributes: ['id', 'title', 'audio_url', 'image_url', 'release_date', 'listen_count'],
+      attributes: ['id', 'title', 'audio_url', 'image_url', 'release_date', 'listen_count', 'exclusive'],
       include: [
         { model: Artist, as: 'artist', attributes: ['name'] },
         { model: Category, as: 'category', attributes: ['name'] },
@@ -58,6 +59,7 @@ export const getPopularSongs = async (req, res) => {
       image_url: song.image_url,
       release_date: song.release_date,
       listen_count: song.listen_count,
+      exclusive: song.exclusive,
     }));
 
     res.json(formattedSongs);
@@ -90,7 +92,7 @@ export const getTrendingSongs = async (req, res) => {
         {
           model: Song,
           as: 'song',
-          attributes: ['id', 'title', 'audio_url', 'image_url'],
+          attributes: ['id', 'title', 'audio_url', 'image_url', 'exclusive'],
           include: [
             { model: Artist, as: 'artist', attributes: ['name'] },
             { model: Category, as: 'category', attributes: ['name'] },
@@ -107,6 +109,7 @@ export const getTrendingSongs = async (req, res) => {
       audio_url: entry.song.audio_url,
       image_url: entry.song.image_url,
       listen_count: parseInt(entry.getDataValue('listen_count')),
+      exclusive: entry.song.exclusive,
     }));
 
     res.json(formattedTrending);
@@ -130,7 +133,7 @@ export const getRecentlyPlayed = async (req, res) => {
         {
           model: Song,
           as: 'song',
-          attributes: ['id', 'title', 'audio_url', 'image_url'],
+          attributes: ['id', 'title', 'audio_url', 'image_url', 'exclusive'],
           include: [
             { model: Artist, as: 'artist', attributes: ['name'] },
             { model: Category, as: 'category', attributes: ['name'] },
@@ -148,6 +151,7 @@ export const getRecentlyPlayed = async (req, res) => {
       category_name: entry.song.category ? entry.song.category.name : 'Unknown category',
       audio_url: entry.song.audio_url,
       image_url: entry.song.image_url,
+      exclusive: entry.song.exclusive,
     }));
 
     // Lọc trùng theo song.id → chỉ giữ lần nghe mới nhất

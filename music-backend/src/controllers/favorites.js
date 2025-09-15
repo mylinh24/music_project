@@ -18,7 +18,7 @@ export const getFavorites = async (req, res) => {
                 {
                     model: Song,
                     as: 'song',
-                    attributes: ['id', 'title', 'artist_id', 'image_url', 'audio_url'],
+                    attributes: ['id', 'title', 'artist_id', 'image_url', 'audio_url', 'exclusive'],
                     include: [
                         { model: Artist, as: 'artist', attributes: ['name'] }
                     ]

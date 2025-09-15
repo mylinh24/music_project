@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Play, Pause, Heart } from 'lucide-react';
+import { Play, Pause, Heart, Crown } from 'lucide-react';
 import { setCurrentSong, setIsPlaying, setCurrentSongList, setCurrentSongIndex } from '../redux/playerSlice';
 import axios from 'axios';
 
@@ -79,25 +79,33 @@ const SongCard = ({ song, songList = [], setFavorites, favorites = [], setError,
             onClick={() => navigate(`/song/${song?.id || ''}`)}
         >
             {/* Ảnh */}
-            {song?.image_url && (
-                <img
-                    src={
-                        isValidImageUrl(song.image_url)
-                            ? song.image_url
-                            : 'https://via.placeholder.com/200x200?text=No+Image'
-                    }
-                    alt={song?.title || 'No title'}
-                    className="w-20 h-20 object-cover rounded-md flex-shrink-0"
-                    onError={(e) =>
-                        (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')
-                    }
-                />
-            )}
+            <div className="relative flex-shrink-0">
+                {song?.image_url && (
+                    <img
+                        src={
+                            isValidImageUrl(song.image_url)
+                                ? song.image_url
+                                : 'https://via.placeholder.com/200x200?text=No+Image'
+                        }
+                        alt={song?.title || 'No title'}
+                        className="w-20 h-20 object-cover rounded-md"
+                        onError={(e) =>
+                            (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')
+                        }
+                    />
+                )}
+                {song?.exclusive && (
+                    <Crown className="absolute top-1 left-1 w-4 h-4 text-yellow-500" />
+                )}
+            </div>
 
             {/* Thông tin */}
             <div className="ml-4 flex-1 min-w-0">
-                <h3 className="text-white font-semibold truncate">
+                <h3 className="text-white font-semibold truncate flex items-center">
                     {song?.title || 'Không có tiêu đề'}
+                    {song?.exclusive && (
+                        <Crown className="w-4 h-4 text-yellow-500 ml-2 flex-shrink-0" />
+                    )}
                 </h3>
                 <p className="text-gray-400 text-sm">
                     {song?.artist_name || 'Không có nghệ sĩ'}

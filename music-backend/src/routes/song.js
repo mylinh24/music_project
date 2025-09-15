@@ -25,7 +25,7 @@ router.get('/songs', async (req, res) => {
         }
 
         const songs = await song.findAll({
-            attributes: ['id', 'title', 'audio_url', 'image_url', 'listen_count', 'release_date'],
+            attributes: ['id', 'title', 'audio_url', 'image_url', 'listen_count', 'release_date', 'exclusive'],
             include: [
                 { model: artist, as: 'artist', attributes: ['name'] },
                 { model: category, as: 'category', attributes: ['name'] },
@@ -45,6 +45,7 @@ router.get('/songs', async (req, res) => {
             image_url: song.image_url,
             listen_count: song.listen_count,
             release_date: song.release_date,
+            exclusive: song.exclusive,
         }));
 
         res.json(formattedSongs);

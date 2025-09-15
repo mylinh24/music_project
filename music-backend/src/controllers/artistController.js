@@ -49,7 +49,7 @@ export const getArtistDetail = async (req, res) => {
 
     const songs = await Song.findAll({
       where: { artist_id: artistId },
-      attributes: ['id', 'title', 'image_url', 'audio_url', 'release_date', 'listen_count'],
+      attributes: ['id', 'title', 'image_url', 'audio_url', 'release_date', 'listen_count', 'exclusive'],
       include: [
         { model: Artist, as: 'artist', attributes: ['name'] },
       ],
@@ -62,6 +62,7 @@ export const getArtistDetail = async (req, res) => {
       audio_url: song.audio_url || null,
       release_date: song.release_date,
       listen_count: song.listen_count,
+      exclusive: song.exclusive,
       artist_name: song.artist.name,
     }));
 

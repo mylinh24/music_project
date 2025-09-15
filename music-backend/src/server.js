@@ -4,6 +4,7 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDB } from './config/configdb.js';
+import './models/index.js'; // Import models to ensure they are loaded
 import authRoutes from './routes/auth.js';
 import songRoutes from './routes/song.js';
 import listenHistoryRoutes from './routes/listenHistory.js';

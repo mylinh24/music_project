@@ -50,6 +50,11 @@ const song = sequelize.define('song', {
         type: DataTypes.TEXT,
         allowNull: true,
     },
+    exclusive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    },
 }, {
     tableName: 'songs',
     timestamps: false,

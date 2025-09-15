@@ -31,7 +31,7 @@ export const getSongsByCategory = async (req, res) => {
           attributes: ['name'],
         },
       ],
-      attributes: ['id', 'title', 'audio_url', 'image_url', 'listen_count', 'release_date'],
+      attributes: ['id', 'title', 'audio_url', 'image_url', 'listen_count', 'release_date', 'exclusive'],
       limit: queryLimit,
       offset,
     });
@@ -44,6 +44,7 @@ export const getSongsByCategory = async (req, res) => {
       image_url: song.image_url,
       listen_count: song.listen_count,
       release_date: song.release_date,
+      exclusive: song.exclusive,
     }));
 
     res.json(formattedSongs);
@@ -61,7 +62,7 @@ export const getSongDetail = async (req, res) => {
     }
 
     const song = await Song.findByPk(songId, {
-      attributes: ['id', 'title', 'lyrics', 'audio_url', 'image_url', 'release_date', 'listen_count', 'artist_id'],
+      attributes: ['id', 'title', 'lyrics', 'audio_url', 'image_url', 'release_date', 'listen_count', 'artist_id', 'exclusive'],
       include: [
         { model: Artist, as: 'artist', attributes: ['id', 'name', 'image_url', 'total_listens'] },
         { model: Category, as: 'category', attributes: ['name'] },
@@ -75,7 +76,7 @@ export const getSongDetail = async (req, res) => {
     // Get all songs by the same artist
     const artistSongs = await Song.findAll({
       where: { artist_id: song.artist_id },
-      attributes: ['id', 'title', 'image_url', 'audio_url', 'listen_count'],
+      attributes: ['id', 'title', 'image_url', 'audio_url', 'listen_count', 'exclusive'],
       include: [
         { model: Artist, as: 'artist', attributes: ['name'] },
       ],
@@ -89,6 +90,7 @@ export const getSongDetail = async (req, res) => {
       image_url: s.image_url,
       audio_url: s.audio_url,
       listen_count: s.listen_count,
+      exclusive: s.exclusive,
     }));
 
     const formattedSong = {
@@ -99,6 +101,7 @@ export const getSongDetail = async (req, res) => {
       image_url: song.image_url,
       release_date: song.release_date,
       listen_count: song.listen_count,
+      exclusive: song.exclusive,
       artist: {
         id: song.artist.id,
         name: song.artist.name,

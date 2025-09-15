@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Play, Pause, Heart } from 'lucide-react';
+import { Play, Pause, Heart, Crown } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
@@ -120,7 +120,9 @@ const HomePage = () => {
           onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')} />
       )}
       <div className="p-4">
-        <h3 className="text-white font-semibold truncate">{song?.title || 'Không có tiêu đề'}</h3>
+        <h3 className="text-white font-semibold truncate">
+          {song?.title || 'Không có tiêu đề'}
+        </h3>
         <p className="text-gray-400 text-sm">{song?.artist_name || 'Không có nghệ sĩ'}</p>
       </div>
       <button className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-green-500 text-white rounded-full p-3 hover:bg-green-600"

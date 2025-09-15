@@ -1,0 +1,3 @@
+- [x] Modify backend /songs route to support pagination (page, limit, hasMore)
+- [x] Update SongsPage.jsx to implement lazy loading with infinite scroll like CategoryPage.jsx
+- [ ] Test the changes

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Play, Pause, Heart } from 'lucide-react';
+import { Play, Pause, Heart, Crown } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { setCurrentSong, setIsPlaying, setCurrentSongList, setCurrentSongIndex } from '../redux/playerSlice';
@@ -156,12 +156,17 @@ const SongDetailPage = () => {
           {songData && (
             <>
               <div className="mb-8 text-center cursor-pointer" onClick={() => navigate(`/song/${songData?.id || ''}`)}>
-                <img
-                  src={isValidImageUrl(songData.image_url) ? songData.image_url : 'https://via.placeholder.com/300x300?text=No+Image'}
-                  alt={songData.title}
-                  className="w-64 h-64 object-cover rounded-lg mx-auto mb-4"
-                  onError={(e) => (e.target.src = 'https://via.placeholder.com/300x300?text=No+Image')}
-                />
+                <div className="relative inline-block">
+                  <img
+                    src={isValidImageUrl(songData.image_url) ? songData.image_url : 'https://via.placeholder.com/300x300?text=No+Image'}
+                    alt={songData.title}
+                    className="w-64 h-64 object-cover rounded-lg mx-auto mb-4"
+                    onError={(e) => (e.target.src = 'https://via.placeholder.com/300x300?text=No+Image')}
+                  />
+                  {songData?.exclusive && (
+                    <Crown className="absolute top-2 left-2 w-8 h-8 text-yellow-500" />
+                  )}
+                </div>
                 <h1 className="text-4xl font-bold">{songData.title}</h1>
                 <p
                   className="text-xl text-gray-400 cursor-pointer hover:text-white"
@@ -202,16 +207,23 @@ const SongDetailPage = () => {
                       className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-200 w-48 cursor-pointer"
                       onClick={() => handleSongClick(song.id)}
                     >
-                      {song.image_url && (
-                        <img
-                          src={isValidImageUrl(song.image_url) ? song.image_url : 'https://via.placeholder.com/200x200?text=No+Image'}
-                          alt={song.title}
-                          className="w-full h-40 object-cover"
-                          onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')}
-                        />
-                      )}
+                      <div className="relative">
+                        {song.image_url && (
+                          <img
+                            src={isValidImageUrl(song.image_url) ? song.image_url : 'https://via.placeholder.com/200x200?text=No+Image'}
+                            alt={song.title}
+                            className="w-full h-40 object-cover"
+                            onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')}
+                          />
+                        )}
+                        {song?.exclusive && (
+                          <Crown className="absolute top-1 left-1 w-5 h-5 text-yellow-500" />
+                        )}
+                      </div>
                       <div className="p-4">
-                        <h3 className="text-white font-semibold truncate">{song.title}</h3>
+                        <h3 className="text-white font-semibold truncate">
+                          {song.title}
+                        </h3>
                         <p className="text-gray-400 text-sm">Lượt nghe: {song.listen_count}</p>
                       </div>
                       <button
