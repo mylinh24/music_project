@@ -1,3 +1,1 @@
-- [x] Modify backend /songs route to support pagination (page, limit, hasMore)
-- [x] Update SongsPage.jsx to implement lazy loading with infinite scroll like CategoryPage.jsx
-- [ ] Test the changes
+- [x] Add crown icon to song cards in HomePage for exclusive songs, similar to SongDetailPage

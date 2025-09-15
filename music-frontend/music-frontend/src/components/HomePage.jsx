@@ -113,12 +113,17 @@ const HomePage = () => {
   const renderSongCard = (song) => (
     <div className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-200 w-48 cursor-pointer"
       onClick={() => navigate(`/song/${song?.id || ''}`)}>
-      {song?.image_url && (
-        <img src={isValidImageUrl(song.image_url) ? song.image_url : 'https://via.placeholder.com/200x200?text=No+Image'}
-          alt={song?.title || 'No title'}
-          className="w-full h-40 object-cover"
-          onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')} />
-      )}
+      <div className="relative">
+        {song?.image_url && (
+          <img src={isValidImageUrl(song.image_url) ? song.image_url : 'https://via.placeholder.com/200x200?text=No+Image'}
+            alt={song?.title || 'No title'}
+            className="w-full h-40 object-cover"
+            onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')} />
+        )}
+        {song?.exclusive && (
+          <Crown className="absolute top-1 left-1 w-5 h-5 text-yellow-500" />
+        )}
+      </div>
       <div className="p-4">
         <h3 className="text-white font-semibold truncate">
           {song?.title || 'Không có tiêu đề'}

@@ -94,9 +94,6 @@ const SongCard = ({ song, songList = [], setFavorites, favorites = [], setError,
                         }
                     />
                 )}
-                {song?.exclusive && (
-                    <Crown className="absolute top-1 left-1 w-4 h-4 text-yellow-500" />
-                )}
             </div>
 
             {/* Thông tin */}
