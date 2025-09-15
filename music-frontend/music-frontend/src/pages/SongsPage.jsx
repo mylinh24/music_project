@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import { setCurrentSongList } from '../redux/playerSlice';
 import Header from '../components/Header';
 import SongCard from '../components/SongCard';
@@ -27,6 +28,8 @@ const SongsPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showLoginPopup, setShowLoginPopup] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -34,7 +37,7 @@ const SongsPage = () => {
                 setLoading(true);
                 setError(null);
                 const [songsResponse, favoritesResponse] = await Promise.all([
-                    axios.get('http://localhost:6969/api/songs'),
+                    axios.get(`http://localhost:6969/api/songs?page=1&limit=5`),
                     isAuthenticated && token
                         ? axios.get(`http://localhost:6969/api/favorites`, {
                             headers: { Authorization: `Bearer ${token}` },
@@ -48,6 +51,7 @@ const SongsPage = () => {
                 setFavorites(favoritesResponse.data.map((fav) => fav.song_id) || []);
                 dispatch(setCurrentSongList(validSongs));
                 setLoading(false);
+                setHasMore(validSongs.length === 5);
             } catch (err) {
                 setError('Không thể tải danh sách bài hát.');
                 setLoading(false);
@@ -55,6 +59,22 @@ const SongsPage = () => {
         };
         fetchData();
     }, [isAuthenticated, token, dispatch]);
+
+    const fetchMoreSongs = async () => {
+        try {
+            const nextPage = page + 1;
+            const response = await axios.get(`http://localhost:6969/api/songs?page=${nextPage}&limit=5`);
+            const newSongs = response.data.filter(
+                (song) => song && song.id && song.audio_url
+            );
+            setSongs(prevSongs => [...prevSongs, ...newSongs]);
+            setPage(nextPage);
+            setHasMore(newSongs.length === 5);
+            dispatch(setCurrentSongList([...songs, ...newSongs]));
+        } catch (err) {
+            setError('Không thể tải thêm bài hát.');
+        }
+    };
 
     return (
         <ErrorBoundary>
@@ -104,19 +124,27 @@ const SongsPage = () => {
                     {songs.length === 0 && !loading && !error ? (
                         <p className="text-xl text-gray-400">Không có bài hát nào.</p>
                     ) : (
-                        <div className="flex flex-col gap-3">
-                            {songs.map((song) => (
-                                <SongCard
-                                    key={song.id}
-                                    song={song}
-                                    songList={songs}
-                                    setFavorites={setFavorites}
-                                    favorites={favorites}
-                                    setError={setError}
-                                    setShowLoginPopup={setShowLoginPopup}
-                                />
-                            ))}
-                        </div>
+                        <InfiniteScroll
+                            dataLength={songs.length}
+                            next={fetchMoreSongs}
+                            hasMore={hasMore}
+                            loader={<div className="text-center text-gray-400">Đang tải thêm...</div>}
+                            endMessage={<div className="text-center text-gray-400">Đã tải hết bài hát.</div>}
+                        >
+                            <div className="flex flex-col gap-3">
+                                {songs.map((song) => (
+                                    <SongCard
+                                        key={song.id}
+                                        song={song}
+                                        songList={songs}
+                                        setFavorites={setFavorites}
+                                        favorites={favorites}
+                                        setError={setError}
+                                        setShowLoginPopup={setShowLoginPopup}
+                                    />
+                                ))}
+                            </div>
+                        </InfiniteScroll>
                     )}
                 </div>
             </div>

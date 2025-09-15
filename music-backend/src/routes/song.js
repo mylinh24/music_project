@@ -6,12 +6,17 @@ import { getSongDetail, getSongsByCategory } from '../controllers/songController
 
 const router = express.Router();
 
-// Get songs with optional sorting and limit
+// Get songs with optional sorting, limit, and pagination
 router.get('/songs', async (req, res) => {
     try {
-        const { sort, limit } = req.query;
+        const { sort, limit, page } = req.query;
         let order = [];
-        let queryLimit = parseInt(limit) || 100;
+        let queryLimit = parseInt(limit) || 20; // Default smaller limit for lazy loading
+        let offset = 0;
+
+        if (page) {
+            offset = (parseInt(page) - 1) * queryLimit;
+        }
 
         if (sort === 'release_date') {
             order = [['release_date', 'DESC']];
@@ -27,6 +32,7 @@ router.get('/songs', async (req, res) => {
             ],
             order,
             limit: queryLimit,
+            offset,
         });
 
         // Map data to match frontend expectations

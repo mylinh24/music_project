@@ -5,8 +5,16 @@ import Category from '../models/category.js';
 export const getSongsByCategory = async (req, res) => {
   try {
     const categoryName = req.params.category;
+    const { page, limit } = req.query;
     if (!categoryName) {
       return res.status(400).json({ error: 'Category name is required.' });
+    }
+
+    let queryLimit = parseInt(limit) || 20;
+    let offset = 0;
+
+    if (page) {
+      offset = (parseInt(page) - 1) * queryLimit;
     }
 
     const songs = await Song.findAll({
@@ -24,6 +32,8 @@ export const getSongsByCategory = async (req, res) => {
         },
       ],
       attributes: ['id', 'title', 'audio_url', 'image_url', 'listen_count', 'release_date'],
+      limit: queryLimit,
+      offset,
     });
 
     const formattedSongs = songs.map(song => ({

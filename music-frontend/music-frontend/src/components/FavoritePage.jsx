@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import { setCurrentSongList } from '../redux/playerSlice';
 import Header from './Header';
 import SongCard from './SongCard';
@@ -27,6 +28,8 @@ const FavoritePage = () => {
   const [error, setError] = useState(null);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const navigate = useNavigate();
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,7 +41,7 @@ const FavoritePage = () => {
       try {
         setLoading(true);
         setError(null);
-        const favoritesResponse = await axios.get('http://localhost:6969/api/favorites', {
+        const favoritesResponse = await axios.get(`http://localhost:6969/api/favorites?page=1&limit=5`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const favoriteSongs = favoritesResponse.data
@@ -54,6 +57,7 @@ const FavoritePage = () => {
         setFavorites(favoriteSongs);
         dispatch(setCurrentSongList(favoriteSongs));
         setLoading(false);
+        setHasMore(favoriteSongs.length === 5);
       } catch (err) {
         setError('Không thể tải danh sách yêu thích.');
         setLoading(false);
@@ -61,6 +65,31 @@ const FavoritePage = () => {
     };
     fetchData();
   }, [isAuthenticated, token, dispatch]);
+
+  const fetchMoreFavorites = async () => {
+    try {
+      const nextPage = page + 1;
+      const response = await axios.get(`http://localhost:6969/api/favorites?page=${nextPage}&limit=5`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const newFavorites = response.data
+        .filter((fav) => fav.song && fav.song.audio_url)
+        .map((fav) => ({
+          id: fav.song.id,
+          title: fav.song.title,
+          artist_name: fav.song.artist ? fav.song.artist.name : 'Không có nghệ sĩ',
+          image_url: fav.song.image_url,
+          audio_url: fav.song.audio_url,
+          artist_id: fav.song.artist_id,
+        }));
+      setFavorites(prevFavorites => [...prevFavorites, ...newFavorites]);
+      setPage(nextPage);
+      setHasMore(newFavorites.length === 5);
+      dispatch(setCurrentSongList([...favorites, ...newFavorites]));
+    } catch (err) {
+      setError('Không thể tải thêm bài hát.');
+    }
+  };
 
   return (
     <ErrorBoundary>
@@ -88,22 +117,30 @@ const FavoritePage = () => {
           {loading && <p className="text-center text-gray-400">Đang tải...</p>}
           {error && <p className="text-center text-red-500">{error}</p>}
           {favorites.length > 0 ? (
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4">Danh sách bài hát yêu thích</h2>
-              <div className="flex flex-col gap-3">
-                {favorites.map((song) => (
-                  <SongCard
-                    key={song?.id || ''}
-                    song={song}
-                    songList={favorites}
-                    setFavorites={setFavorites}
-                    favorites={favorites}
-                    setError={setError}
-                    setShowLoginPopup={setShowLoginPopup}
-                  />
-                ))}
+            <InfiniteScroll
+              dataLength={favorites.length}
+              next={fetchMoreFavorites}
+              hasMore={hasMore}
+              loader={<div className="text-center text-gray-400">Đang tải thêm...</div>}
+              endMessage={<div className="text-center text-gray-400">Đã tải hết bài hát.</div>}
+            >
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Danh sách bài hát yêu thích</h2>
+                <div className="flex flex-col gap-3">
+                  {favorites.map((song) => (
+                    <SongCard
+                      key={song?.id || ''}
+                      song={song}
+                      songList={favorites}
+                      setFavorites={setFavorites}
+                      favorites={favorites}
+                      setError={setError}
+                      setShowLoginPopup={setShowLoginPopup}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            </InfiniteScroll>
           ) : (
             <p className="text-center text-gray-400">Bạn chưa có bài hát yêu thích nào.</p>
           )}

@@ -5,9 +5,24 @@ import Song from '../models/song.js';
 
 export const getAllArtists = async (req, res) => {
   try {
+    const { page, limit, sort } = req.query;
+    let queryLimit = parseInt(limit) || 20; // Mặc định trả về 20 nghệ sĩ mỗi lần
+    let offset = 0;
+
+    if (page) {
+      offset = (parseInt(page) - 1) * queryLimit;
+    }
+
+    let order = [['total_listens', 'DESC']]; // Mặc định sắp xếp theo total_listens
+    if (sort === 'name') {
+      order = [['name', 'ASC']];
+    }
+
     const artists = await Artist.findAll({
       attributes: ['id', 'name', 'image_url', 'total_listens'],
-      order: [['total_listens', 'DESC']],
+      order,
+      limit: queryLimit,
+      offset,
     });
 
     res.json(artists);

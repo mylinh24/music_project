@@ -1,21 +1,35 @@
+// music-frontend/src/pages/ArtistsPage.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import Header from '../components/Header';
 
 const ArtistsPage = () => {
   const [artists, setArtists] = useState([]);
+  const [displayedArtists, setDisplayedArtists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const artistsPerPage = 4; // Số nghệ sĩ hiển thị mỗi lần
 
   useEffect(() => {
     const fetchArtists = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const response = await axios.get('http://localhost:6969/api/artists');
-        setArtists(response.data);
+        const validArtists = response.data.filter(
+          (artist) => artist && artist.id && artist.name
+        );
+        setArtists(validArtists);
+        // Hiển thị trang đầu tiên
+        setDisplayedArtists(validArtists.slice(0, artistsPerPage));
+        setHasMore(validArtists.length > artistsPerPage);
+        setLoading(false);
       } catch (err) {
         setError('Không thể tải danh sách nghệ sĩ.');
-      } finally {
         setLoading(false);
       }
     };
@@ -23,7 +37,22 @@ const ArtistsPage = () => {
     fetchArtists();
   }, []);
 
-  if (loading) {
+  const fetchMoreArtists = () => {
+    try {
+      const nextPage = page + 1;
+      const startIndex = (nextPage - 1) * artistsPerPage;
+      const endIndex = startIndex + artistsPerPage;
+      const newArtists = artists.slice(startIndex, endIndex);
+
+      setDisplayedArtists((prevArtists) => [...prevArtists, ...newArtists]);
+      setPage(nextPage);
+      setHasMore(endIndex < artists.length);
+    } catch (err) {
+      setError('Không thể tải thêm nghệ sĩ.');
+    }
+  };
+
+  if (loading && displayedArtists.length === 0) {
     return (
       <div className="min-h-screen bg-gray-900 text-white">
         <Header />
@@ -34,7 +63,7 @@ const ArtistsPage = () => {
     );
   }
 
-  if (error) {
+  if (error && displayedArtists.length === 0) {
     return (
       <div className="min-h-screen bg-gray-900 text-white">
         <Header />
@@ -50,24 +79,39 @@ const ArtistsPage = () => {
       <Header />
       <div className="container mx-auto px-4 py-8 pt-20 pb-24">
         <h1 className="text-3xl font-bold mb-8">Tất cả nghệ sĩ</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {artists.map((artist) => (
-            <div key={artist.id} className="bg-gray-800 rounded-lg p-4 hover:bg-gray-700 transition-colors">
-              <img
-                src={artist.image_url || 'https://via.placeholder.com/200x200?text=No+Image'}
-                alt={artist.name}
-                className="w-full h-48 object-cover rounded-lg mb-4"
-                onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')}
-              />
-              <h3 className="text-lg font-semibold mb-2">
-                <Link to={`/artist/${artist.id}`} className="hover:underline">
-                  {artist.name}
-                </Link>
-              </h3>
-              <p className="text-sm text-gray-500">{artist.total_listens} lượt nghe</p>
+        {displayedArtists.length === 0 && !loading && !error ? (
+          <p className="text-xl text-gray-400">Không có nghệ sĩ nào.</p>
+        ) : (
+          <InfiniteScroll
+            dataLength={displayedArtists.length}
+            next={fetchMoreArtists}
+            hasMore={hasMore}
+            loader={<div className="text-center text-gray-400">Đang tải thêm...</div>}
+            endMessage={<div className="text-center text-gray-400">Đã tải hết nghệ sĩ.</div>}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {displayedArtists.map((artist) => (
+                <div
+                  key={artist.id}
+                  className="bg-gray-800 rounded-lg p-4 hover:bg-gray-700 transition-colors"
+                >
+                  <img
+                    src={artist.image_url || 'https://via.placeholder.com/200x200?text=No+Image'}
+                    alt={artist.name}
+                    className="w-full h-48 object-cover rounded-lg mb-4"
+                    onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')}
+                  />
+                  <h3 className="text-lg font-semibold mb-2">
+                    <Link to={`/artist/${artist.id}`} className="hover:underline">
+                      {artist.name}
+                    </Link>
+                  </h3>
+                  <p className="text-sm text-gray-500">{artist.total_listens} lượt nghe</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </InfiniteScroll>
+        )}
       </div>
     </div>
   );

@@ -3,6 +3,14 @@ import { Favorite, User, Song, Artist } from '../models/index.js';
 export const getFavorites = async (req, res) => {
     try {
         const user_id = req.userId;
+        const { page, limit } = req.query;
+
+        let queryLimit = parseInt(limit) || 20;
+        let offset = 0;
+
+        if (page) {
+            offset = (parseInt(page) - 1) * queryLimit;
+        }
 
         const favorites = await Favorite.findAll({
             where: { user_id },
@@ -16,6 +24,8 @@ export const getFavorites = async (req, res) => {
                     ]
                 },
             ],
+            limit: queryLimit,
+            offset,
         });
 
         res.status(200).json(favorites);
