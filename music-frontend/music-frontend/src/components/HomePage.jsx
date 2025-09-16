@@ -13,9 +13,11 @@ import Header from './Header';
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false };
+
   static getDerivedStateFromError(error) {
     return { hasError: true };
   }
+
   render() {
     if (this.state.hasError) {
       return <h1 className="text-red-500 text-center">Đã xảy ra lỗi.</h1>;
@@ -53,9 +55,18 @@ const HomePage = () => {
           isAuthenticated && token ? axios.get(`http://localhost:6969/api/favorites`, { headers: { Authorization: `Bearer ${token}` } }) : Promise.resolve({ data: [] }),
         ];
         const [latest, popular, trending, recent, artist, favoritesResponse] = await Promise.all(requests);
+
+        console.log("Raw trending data from API:", trending.data);
+
+        // Đảm bảo trường exclusive được xử lý đúng, ép kiểu boolean
+        const trendingWithExclusive = trending.data.map(song => ({
+          ...song,
+          exclusive: Boolean(song.exclusive),
+        }));
+
         setLatestSongs(latest.data || []);
         setPopularSongs(popular.data || []);
-        setTrendingSongs(trending.data || []);
+        setTrendingSongs(trendingWithExclusive || []);
         setRecentlyPlayed(recent.data || []);
         setArtists(artist.data || []);
         setFavorites(favoritesResponse.data.map(fav => fav.song_id) || []);
@@ -67,6 +78,10 @@ const HomePage = () => {
     };
     fetchData();
   }, [isAuthenticated, userId, token]);
+
+  useEffect(() => {
+    console.log("TrendingSongs frontend:", trendingSongs);
+  }, [trendingSongs]);
 
   const isValidImageUrl = (url) => {
     return url && !url.startsWith('C:') && url.match(/\.(jpeg|jpg|png|gif)$/i);
@@ -115,13 +130,15 @@ const HomePage = () => {
       onClick={() => navigate(`/song/${song?.id || ''}`)}>
       <div className="relative">
         {song?.image_url && (
-          <img src={isValidImageUrl(song.image_url) ? song.image_url : 'https://via.placeholder.com/200x200?text=No+Image'}
+          <img
+            src={isValidImageUrl(song.image_url) ? song.image_url : 'https://via.placeholder.com/200x200?text=No+Image'}
             alt={song?.title || 'No title'}
             className="w-full h-40 object-cover"
-            onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')} />
+            onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')}
+          />
         )}
         {song?.exclusive && (
-          <Crown className="absolute top-1 left-1 w-5 h-5 text-yellow-500" />
+          <Crown className="absolute top-1 left-1 w-6 h-6 text-yellow-400 drop-shadow-lg z-20" />
         )}
       </div>
       <div className="p-4">
@@ -130,18 +147,20 @@ const HomePage = () => {
         </h3>
         <p className="text-gray-400 text-sm">{song?.artist_name || 'Không có nghệ sĩ'}</p>
       </div>
-      <button className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-green-500 text-white rounded-full p-3 hover:bg-green-600"
+      <button
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-green-500 text-white rounded-full p-3 hover:bg-green-600"
         onClick={(e) => {
           e.stopPropagation();
-          let songList = trendingSongs.some(s => s.id === song.id) ? trendingSongs :
-            latestSongs.some(s => s.id === song.id) ? latestSongs :
-              popularSongs.some(s => s.id === song.id) ? popularSongs :
-                recentlyPlayed.some(s => s.id === song.id) ? recentlyPlayed : [];
+          let songList = trendingSongs.some(s => s.id === song.id) ? trendingSongs
+            : latestSongs.some(s => s.id === song.id) ? latestSongs
+            : popularSongs.some(s => s.id === song.id) ? popularSongs
+            : recentlyPlayed.some(s => s.id === song.id) ? recentlyPlayed : [];
           handlePlayPause(song, songList);
         }}>
         {currentSong?.id === song.id && isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
       </button>
-      <button className="absolute top-2 right-2 z-10 p-2 rounded-full bg-gray-900 bg-opacity-50 hover:bg-opacity-75 transition-opacity duration-200"
+      <button
+        className="absolute top-2 right-2 z-10 p-2 rounded-full bg-gray-900 bg-opacity-50 hover:bg-opacity-75 transition-opacity duration-200"
         onClick={(e) => handleFavoriteToggle(song, e)}>
         <Heart className={`w-5 h-5 ${favorites.includes(song.id) ? 'text-red-500 fill-red-500' : 'text-white'}`} />
       </button>
@@ -153,10 +172,12 @@ const HomePage = () => {
       onClick={() => navigate(`/artist/${artist?.id || ''}`)}>
       <div className="p-4">
         <div className="w-32 h-32 mx-auto rounded-full overflow-hidden">
-          <img src={isValidImageUrl(artist?.image_url) ? artist.image_url : 'https://via.placeholder.com/200x200?text=No+Image'}
+          <img
+            src={isValidImageUrl(artist?.image_url) ? artist.image_url : 'https://via.placeholder.com/200x200?text=No+Image'}
             alt={artist?.name || 'No name'}
             className="w-full h-full object-cover"
-            onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')} />
+            onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')}
+          />
         </div>
         <h3 className="text-white font-semibold truncate mt-3">{artist?.name || 'Không có tên'}</h3>
       </div>
@@ -184,9 +205,18 @@ const HomePage = () => {
           {isAuthenticated && userId && recentlyPlayed.length > 0 && (
             <section className="mb-12">
               <h2 className="text-2xl font-bold mb-4">Nghe Gần Đây</h2>
-              <Swiper modules={[Navigation, Pagination, Mousewheel]} spaceBetween={16} slidesPerView={1}
-                navigation pagination={{ clickable: true }} mousewheel={{ forceToAxis: true }}
-                breakpoints={{ 640: { slidesPerView: 2 }, 768: { slidesPerView: 3 }, 1024: { slidesPerView: 4 } }}>
+              <Swiper
+                modules={[Navigation, Pagination, Mousewheel]}
+                spaceBetween={16}
+                slidesPerView={1}
+                navigation
+                pagination={{ clickable: true }}
+                mousewheel={{ forceToAxis: true }}
+                breakpoints={{
+                  640: { slidesPerView: 2 },
+                  768: { slidesPerView: 3 },
+                  1024: { slidesPerView: 4 },
+                }}>
                 {recentlyPlayed.map((song) => (
                   <SwiperSlide key={song?.id || ''}>{renderSongCard(song)}</SwiperSlide>
                 ))}
@@ -195,19 +225,37 @@ const HomePage = () => {
           )}
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Xu Hướng</h2>
-            <Swiper modules={[Navigation, Pagination, Mousewheel]} spaceBetween={16} slidesPerView={1}
-              navigation pagination={{ clickable: true }} mousewheel={{ forceToAxis: true }}
-              breakpoints={{ 640: { slidesPerView: 2 }, 768: { slidesPerView: 3 }, 1024: { slidesPerView: 5 } }}>
+            <Swiper
+              modules={[Navigation, Pagination, Mousewheel]}
+              spaceBetween={16}
+              slidesPerView={1}
+              navigation
+              pagination={{ clickable: true }}
+              mousewheel={{ forceToAxis: true }}
+              breakpoints={{
+                640: { slidesPerView: 2 },
+                768: { slidesPerView: 3 },
+                1024: { slidesPerView: 5 },
+              }}>
               {trendingSongs.map((song) => (
-                <SwiperSlide key={song?.id || ''}>{renderSongCard(song)}</SwiperSlide>
+                <SwiperSlide key={song?.id || ''}>{renderSongCard(song, trendingSongs)}</SwiperSlide>
               ))}
             </Swiper>
           </section>
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Mới Nhất</h2>
-            <Swiper modules={[Navigation, Pagination, Mousewheel]} spaceBetween={16} slidesPerView={1}
-              navigation pagination={{ clickable: true }} mousewheel={{ forceToAxis: true }}
-              breakpoints={{ 640: { slidesPerView: 2 }, 768: { slidesPerView: 3 }, 1024: { slidesPerView: 4 } }}>
+            <Swiper
+              modules={[Navigation, Pagination, Mousewheel]}
+              spaceBetween={16}
+              slidesPerView={1}
+              navigation
+              pagination={{ clickable: true }}
+              mousewheel={{ forceToAxis: true }}
+              breakpoints={{
+                640: { slidesPerView: 2 },
+                768: { slidesPerView: 3 },
+                1024: { slidesPerView: 4 },
+              }}>
               {latestSongs.map((song) => (
                 <SwiperSlide key={song?.id || ''}>{renderSongCard(song)}</SwiperSlide>
               ))}
@@ -215,9 +263,18 @@ const HomePage = () => {
           </section>
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Phổ Biến</h2>
-            <Swiper modules={[Navigation, Pagination, Mousewheel]} spaceBetween={16} slidesPerView={1}
-              navigation pagination={{ clickable: true }} mousewheel={{ forceToAxis: true }}
-              breakpoints={{ 640: { slidesPerView: 2 }, 768: { slidesPerView: 3 }, 1024: { slidesPerView: 3 } }}>
+            <Swiper
+              modules={[Navigation, Pagination, Mousewheel]}
+              spaceBetween={16}
+              slidesPerView={1}
+              navigation
+              pagination={{ clickable: true }}
+              mousewheel={{ forceToAxis: true }}
+              breakpoints={{
+                640: { slidesPerView: 2 },
+                768: { slidesPerView: 3 },
+                1024: { slidesPerView: 3 },
+              }}>
               {popularSongs.map((song) => (
                 <SwiperSlide key={song?.id || ''}>{renderSongCard(song)}</SwiperSlide>
               ))}
@@ -225,15 +282,23 @@ const HomePage = () => {
           </section>
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Nghệ Sĩ</h2>
-            <Swiper modules={[Navigation, Pagination, Mousewheel]} spaceBetween={16} slidesPerView={1}
-              navigation pagination={{ clickable: true }} mousewheel={{ forceToAxis: true }}
-              breakpoints={{ 640: { slidesPerView: 2 }, 768: { slidesPerView: 3 }, 1024: { slidesPerView: 4 } }}>
+            <Swiper
+              modules={[Navigation, Pagination, Mousewheel]}
+              spaceBetween={16}
+              slidesPerView={1}
+              navigation
+              pagination={{ clickable: true }}
+              mousewheel={{ forceToAxis: true }}
+              breakpoints={{
+                640: { slidesPerView: 2 },
+                768: { slidesPerView: 3 },
+                1024: { slidesPerView: 4 },
+              }}>
               {artists.map((artist) => (
                 <SwiperSlide key={artist?.id || ''}>{renderArtistCard(artist)}</SwiperSlide>
               ))}
             </Swiper>
           </section>
-
         </div>
       </div>
     </ErrorBoundary>

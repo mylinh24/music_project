@@ -75,6 +75,7 @@ export const getTrendingSongs = async (req, res) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    // Lấy danh sách song_id và listen_count từ ListenHistory
     const trending = await ListenHistory.findAll({
       attributes: [
         'song_id',
@@ -88,29 +89,37 @@ export const getTrendingSongs = async (req, res) => {
       group: ['song_id'],
       order: [[Sequelize.literal('listen_count'), 'DESC']],
       limit: limit,
+    });
+
+    const songIds = trending.map(entry => entry.song_id);
+
+    // Lấy chi tiết bài hát từ Song theo danh sách song_id
+    const songs = await Song.findAll({
+      where: { id: songIds },
+      attributes: ['id', 'title', 'audio_url', 'image_url', 'release_date', 'listen_count', 'exclusive'],
       include: [
-        {
-          model: Song,
-          as: 'song',
-          attributes: ['id', 'title', 'audio_url', 'image_url', 'exclusive'],
-          include: [
-            { model: Artist, as: 'artist', attributes: ['name'] },
-            { model: Category, as: 'category', attributes: ['name'] },
-          ],
-        },
+        { model: Artist, as: 'artist', attributes: ['name'] },
+        { model: Category, as: 'category', attributes: ['name'] },
       ],
     });
 
-    const formattedTrending = trending.map(entry => ({
-      id: entry.song.id,
-      title: entry.song.title,
-      artist_name: entry.song.artist ? entry.song.artist.name : 'Unknown artist',
-      category_name: entry.song.category ? entry.song.category.name : 'Unknown category',
-      audio_url: entry.song.audio_url,
-      image_url: entry.song.image_url,
-      listen_count: parseInt(entry.getDataValue('listen_count')),
-      exclusive: entry.song.exclusive,
-    }));
+    const songMap = new Map(songs.map(song => [song.id, song]));
+
+    // Ghép dữ liệu listen_count với chi tiết bài hát
+    const formattedTrending = trending.map(entry => {
+      const song = songMap.get(entry.song_id);
+      return {
+        id: song.id,
+        title: song.title,
+        artist_name: song.artist ? song.artist.name : 'Unknown artist',
+        category_name: song.category ? song.category.name : 'Unknown category',
+        audio_url: song.audio_url,
+        image_url: song.image_url,
+        release_date: song.release_date,
+        listen_count: parseInt(entry.getDataValue('listen_count')),
+        exclusive: song.exclusive !== undefined ? song.exclusive : false,
+      };
+    });
 
     res.json(formattedTrending);
   } catch (error) {

@@ -53,6 +53,7 @@ const FavoritePage = () => {
             image_url: fav.song.image_url,
             audio_url: fav.song.audio_url,
             artist_id: fav.song.artist_id,
+            exclusive: fav.song.exclusive,
           }));
         setFavorites(favoriteSongs);
         dispatch(setCurrentSongList(favoriteSongs));

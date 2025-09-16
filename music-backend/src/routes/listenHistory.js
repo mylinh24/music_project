@@ -61,57 +61,7 @@ router.get('/listen-history', async (req, res) => {
     }
 });
 
-// Get trending songs (based on listen count in the last 7 days)
-router.get('/trending-songs', async (req, res) => {
-    try {
-        const { limit } = req.query;
-        const queryLimit = parseInt(limit) || 100;
 
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-        const trending = await listenHistory.findAll({
-            attributes: [
-                'song_id',
-                [Sequelize.fn('COUNT', Sequelize.col('song_id')), 'listen_count'],
-            ],
-            where: {
-                listened_at: {
-                    [Sequelize.Op.gte]: sevenDaysAgo,
-                },
-            },
-            group: ['song_id'],
-            order: [[Sequelize.literal('listen_count'), 'DESC']],
-            limit: 10,
-            include: [
-                {
-                    model: song,
-                    as: 'song',
-                    attributes: ['id', 'title', 'audio_url', 'image_url'],
-                    include: [
-                        { model: artist, as: 'artist', attributes: ['name'] },
-                        { model: category, as: 'category', attributes: ['name'] },
-                    ],
-                },
-            ],
-        });
-
-        const formattedTrending = trending.map(entry => ({
-            id: entry.song.id,
-            title: entry.song.title,
-            artist_name: entry.song.artist ? entry.song.artist.name : 'Unknown artist',
-            category_name: entry.song.category ? entry.song.category.name : 'Unknown category',
-            audio_url: entry.song.audio_url,
-            image_url: entry.song.image_url,
-            listen_count: parseInt(entry.getDataValue('listen_count')),
-        }));
-
-        res.json(formattedTrending);
-    } catch (error) {
-        console.error('Error fetching trending songs:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
 
 router.get('/artists', async (req, res) => {
     try {
