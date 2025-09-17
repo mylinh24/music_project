@@ -92,17 +92,20 @@ router.get('/artists', async (req, res) => {
 router.post('/listen-history', async (req, res) => {
     try {
         const { user_id, song_id } = req.body;
-        if (!user_id || !song_id) {
-            return res.status(400).json({ error: 'user_id and song_id are required' });
+        if (!song_id) {
+            return res.status(400).json({ error: 'song_id is required' });
         }
 
-        await listenHistory.create({
-            user_id,
-            song_id,
-            listened_at: new Date(),
-        });
+        // If user is logged in, record in listen history
+        if (user_id) {
+            await listenHistory.create({
+                user_id,
+                song_id,
+                listened_at: new Date(),
+            });
+        }
 
-        // Increment song's listen_count
+        // Increment song's listen_count regardless of login status
         await song.increment('listen_count', { by: 1, where: { id: song_id } });
 
         res.status(201).json({ message: 'Listen recorded' });

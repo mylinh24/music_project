@@ -1,1 +1,1 @@
-- [x] Add crown icon to song cards in HomePage for exclusive songs, similar to SongDetailPage
+- [x] Sửa lỗi thiếu thuộc tính `exclusive` trong hàm `fetchMoreFavorites` của FavoritePage.jsx để icon vương miện hiện cho tất cả bài hát exclusive trong danh sách yêu thích.

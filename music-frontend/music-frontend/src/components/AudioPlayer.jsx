@@ -34,11 +34,11 @@ const AudioPlayer = () => {
   const isPlayingRef = useRef(isPlaying);
 
   // States cho theo dõi lượt nghe
-  const [hasCountedListen, setHasCountedListen] = useState(false);
   const [listeningSession, setListeningSession] = useState({
     startPosition: 0,        // Vị trí bắt đầu nghe (seconds)
     accumulatedTime: 0,      // Thời gian nghe tích lũy (seconds)
     lastUpdateTime: null,    // Thời điểm cập nhật cuối cùng
+    sessionStartTime: null,  // Thời điểm bắt đầu session
     isActive: false          // Session đang hoạt động hay không
   });
 
@@ -47,22 +47,29 @@ const AudioPlayer = () => {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
-  // Hàm reset session nghe (khi bắt đầu từ vị trí ≤ 50%)
+  // Hàm reset session nghe (khi bắt đầu từ vị trí ≤ 49%)
   const resetListeningSession = useCallback((currentTime) => {
     const audio = audioRef.current;
     if (!audio || !audio.duration) return;
 
-    const halfDuration = audio.duration / 2;
+    const lowerBound = audio.duration * 0.49; // 49%
+    const upperBound = audio.duration * 0.49; // 
 
-    // Chỉ reset nếu vị trí hiện tại ≤ 50% thời lượng bài hát
-    if (currentTime <= halfDuration) {
+    // Reset session nếu vị trí hiện tại ≤ 49%
+    if (currentTime <= lowerBound) {
       setListeningSession({
         startPosition: currentTime,
         accumulatedTime: 0,
         lastUpdateTime: Date.now(),
+        sessionStartTime: Date.now(),
         isActive: true
       });
-      console.log(`Reset listening session at ${currentTime.toFixed(2)}s (≤50% at ${halfDuration.toFixed(2)}s)`);
+      console.log(`Reset listening session at ${currentTime.toFixed(2)}s (≤49% at ${lowerBound.toFixed(2)}s)`);
+    }
+    // Deactivate session if seeked to > 49%
+    else if (currentTime > upperBound) {
+      setListeningSession(prev => ({ ...prev, isActive: false }));
+      console.log(`Session deactivated - seeked to position > 49% (${currentTime.toFixed(2)}s)`);
     }
   }, []);
 
@@ -115,33 +122,32 @@ const AudioPlayer = () => {
     if (
       audio &&
       currentSong &&
-      isAuthenticated &&
-      !hasCountedListen &&
       audio.duration > 0 &&
       listeningSession.isActive
     ) {
-      const requiredTime = audio.duration / 2; // 50% thời lượng bài hát
+      const requiredTime = audio.duration * 0.51; // 51% thời lượng bài hát
 
       if (listeningSession.accumulatedTime >= requiredTime) {
         console.log(`Listen counted! Accumulated: ${listeningSession.accumulatedTime.toFixed(2)}s, Required: ${requiredTime.toFixed(2)}s`);
 
         // Gọi API ghi lượt nghe
+        const requestBody = { song_id: currentSong.id };
+        if (isAuthenticated && userId) {
+          requestBody.user_id = userId;
+        }
+
         axios
-          .post('http://localhost:6969/api/listen-history', {
-            user_id: userId,
-            song_id: currentSong.id,
-          })
+          .post('http://localhost:6969/api/listen-history', requestBody)
           .then(() => {
-            setHasCountedListen(true);
-            // Vô hiệu hóa session sau khi đã tính lượt nghe
-            setListeningSession(prev => ({ ...prev, isActive: false }));
+            // Reset accumulatedTime to allow counting again
+            setListeningSession(prev => ({ ...prev, accumulatedTime: 0 }));
           })
           .catch((error) => {
             console.error('Error recording listen:', error);
           });
       }
     }
-  }, [listeningSession.accumulatedTime, currentSong, isAuthenticated, hasCountedListen, userId]);
+  }, [listeningSession.accumulatedTime, currentSong, isAuthenticated, userId]);
 
   // Hàm cập nhật tiến độ
   const updateProgress = useCallback(() => {
@@ -151,7 +157,7 @@ const AudioPlayer = () => {
     }
   }, [dispatch]);
 
-  // Cập nhật nguồn âm thanh và trạng thái phát
+  // Cập nhật nguồn âm thanh
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !currentSong?.audio_url) return;
@@ -161,8 +167,8 @@ const AudioPlayer = () => {
       startPosition: 0,
       accumulatedTime: 0,
       lastUpdateTime: null,
-      isActive: false,
-      hasCountedListen: false
+      sessionStartTime: null,
+      isActive: false
     });
 
     // Chỉ cập nhật src nếu khác với nguồn hiện tại
@@ -176,23 +182,28 @@ const AudioPlayer = () => {
     audio.playbackRate = playbackRate;
     audio.currentTime = progress;
 
-    const playAudio = async () => {
-      if (isPlaying) {
-        try {
-          await audio.play();
-          // Khởi tạo session nghe khi bắt đầu phát
-          resetListeningSession(audio.currentTime);
-        } catch (err) {
-          dispatch(setError('Không thể phát âm thanh.'));
-          dispatch(setIsPlaying(false));
-        }
-      } else {
-        audio.pause();
-      }
-    };
+    // THAY ĐỔI: Gọi resetListeningSession ngay khi chuyển bài mới để set isActive: true và đảm bảo session active cho autoplay
+    resetListeningSession(0);
+  }, [currentSong, volume, playbackRate, dispatch, resetListeningSession]);
 
-    playAudio();
-  }, [currentSong, isPlaying, volume, playbackRate, dispatch, resetListeningSession]);
+  // Xử lý phát/dừng
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.play().then(() => {
+        if (!listeningSession.isActive) {
+          resetListeningSession(audio.currentTime);
+        }
+      }).catch(err => {
+        dispatch(setError('Không thể phát âm thanh.'));
+        dispatch(setIsPlaying(false));
+      });
+    } else {
+      audio.pause();
+    }
+  }, [isPlaying, dispatch, resetListeningSession, listeningSession.isActive, currentSong]);
 
   // Xử lý sự kiện timeupdate và ended
   useEffect(() => {
@@ -206,18 +217,17 @@ const AudioPlayer = () => {
     // Xử lý sự kiện seeked (khi người dùng tua)
     const handleSeeked = () => {
       const currentTime = audio.currentTime;
-      const halfDuration = audio.duration / 2;
+      const halfDuration = audio.duration * 0.51; // 51%
 
       console.log(`Seeked to ${currentTime.toFixed(2)}s (Half duration: ${halfDuration.toFixed(2)}s)`);
 
-      // Nếu tua về vị trí ≤ 50%, reset session
-      if (currentTime <= halfDuration) {
+      // Nếu tua về vị trí ≤ 49%, reset session
+      if (currentTime <= audio.duration * 0.49) {
         resetListeningSession(currentTime);
       } else {
-        // Nếu tua về vị trí > 50%, vô hiệu hóa session hiện tại
-        // vì không thể đạt đủ 50% thời gian nghe từ vị trí này
+        // Nếu tua về vị trí > 51%, vô hiệu hóa session hiện tại
         setListeningSession(prev => ({ ...prev, isActive: false }));
-        console.log('Session deactivated - seeked to position > 50%');
+        console.log('Session deactivated - seeked to position > 51%');
       }
     };
 
@@ -323,7 +333,7 @@ const AudioPlayer = () => {
             <div>Acc: {listeningSession.accumulatedTime.toFixed(1)}s</div>
             <div>Playing: {isPlaying ? 'YES' : 'NO'}</div>
             <div>Start: {listeningSession.startPosition.toFixed(1)}s</div>
-            <div>Req: {(audioRef.current?.duration ? (audioRef.current.duration / 2).toFixed(1) : 0)}s</div>
+            <div>Req: {(audioRef.current?.duration ? (audioRef.current.duration * 0.51).toFixed(1) : 0)}s</div>
           </div>
         )}
       </div>

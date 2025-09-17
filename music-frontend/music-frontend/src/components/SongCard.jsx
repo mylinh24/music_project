@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Play, Pause, Heart, Crown } from 'lucide-react';
+import { Play, Pause, Heart, Crown, MoreVertical, Download, Share2, Link, Facebook } from 'lucide-react';
 import { setCurrentSong, setIsPlaying, setCurrentSongList, setCurrentSongIndex } from '../redux/playerSlice';
 import axios from 'axios';
 
@@ -10,6 +10,9 @@ const SongCard = ({ song, songList = [], setFavorites, favorites = [], setError,
     const { isAuthenticated, token } = useSelector((state) => state.auth);
     const { currentSong, isPlaying } = useSelector((state) => state.player);
     const navigate = useNavigate();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
+    const menuRef = useRef(null);
 
     const isValidImageUrl = (url) => {
         return url && !url.startsWith('C:') && url.match(/\.(jpeg|jpg|png|gif)$/i);
@@ -73,9 +76,54 @@ const SongCard = ({ song, songList = [], setFavorites, favorites = [], setError,
         }
     };
 
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsMenuOpen(false);
+                setIsShareMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleDownload = (e) => {
+        e.stopPropagation();
+        if (!song?.audio_url) {
+            setError('Không có URL âm thanh để tải xuống.');
+            return;
+        }
+        window.open(song.audio_url, '_blank');
+        setIsMenuOpen(false);
+    };
+
+    const handleCopyLink = (e) => {
+        e.stopPropagation();
+        const songUrl = `${window.location.origin}/song/${song?.id || ''}`;
+        navigator.clipboard.writeText(songUrl)
+            .then(() => {
+                console.log('Link copied to clipboard!');
+            })
+            .catch(() => {
+                setError('Không thể sao chép liên kết.');
+            });
+        setIsMenuOpen(false);
+        setIsShareMenuOpen(false);
+    };
+
+    const handleShareFacebook = (e) => {
+        e.stopPropagation();
+        const songUrl = `${window.location.origin}/song/${song?.id || ''}`;
+        const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(songUrl)}`;
+        window.open(facebookShareUrl, '_blank', 'width=600,height=400');
+        setIsMenuOpen(false);
+        setIsShareMenuOpen(false);
+    };
+
     return (
         <div
-            className="group relative flex items-center bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-200 cursor-pointer p-3"
+            className="group relative flex items-center bg-gray-800 rounded-lg hover:bg-gray-700 transition-all duration-200 cursor-pointer p-3"
             onClick={() => navigate(`/song/${song?.id || ''}`)}
         >
             {/* Ảnh */}
@@ -131,6 +179,60 @@ const SongCard = ({ song, songList = [], setFavorites, favorites = [], setError,
                     className={`w-5 h-5 ${isFavorite ? 'text-red-500 fill-red-500' : 'text-white'}`}
                 />
             </button>
+
+            {/* Nút MoreVertical */}
+            <div className="relative" ref={menuRef}>
+                <button
+                    className="ml-2 p-2 rounded-full bg-gray-900 bg-opacity-50 hover:bg-opacity-75 transition-opacity duration-200"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMenuOpen(!isMenuOpen);
+                    }}
+                >
+                    <MoreVertical className="w-5 h-5 text-white" />
+                </button>
+                {isMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg z-50 overflow-visible">
+                        <button
+                            className="flex items-center w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700"
+                            onClick={handleDownload}
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            Tải bài hát
+                        </button>
+                        <div className="relative">
+                            <button
+                                className="flex items-center w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsShareMenuOpen(!isShareMenuOpen);
+                                }}
+                            >
+                                <Share2 className="w-4 h-4 mr-2" />
+                                Chia sẻ
+                            </button>
+                            {isShareMenuOpen && (
+                                <div className="absolute right-full top-0 w-48 bg-gray-800 rounded-md shadow-lg z-60 overflow-visible">
+                                    <button
+                                        className="flex items-center w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700"
+                                        onClick={handleCopyLink}
+                                    >
+                                        <Link className="w-4 h-4 mr-2" />
+                                        Sao chép liên kết
+                                    </button>
+                                    <button
+                                        className="flex items-center w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700"
+                                        onClick={handleShareFacebook}
+                                    >
+                                        <Facebook className="w-4 h-4 mr-2" />
+                                        Chia sẻ lên Facebook
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

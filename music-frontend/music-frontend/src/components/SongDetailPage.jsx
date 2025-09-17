@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Play, Pause, Heart, Crown } from 'lucide-react';
+import { Play, Pause, Crown } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { setCurrentSong, setIsPlaying, setCurrentSongList, setCurrentSongIndex } from '../redux/playerSlice';
 import Header from './Header';
+import BigSongCard from './BigSongCard';
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null };
@@ -36,7 +37,7 @@ const SongDetailPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isAuthenticated, token } = useSelector((state) => state.auth);
-  const { currentSong, isPlaying, currentSongList, currentSongIndex } = useSelector((state) => state.player);
+  const { currentSong, isPlaying } = useSelector((state) => state.player);
   const [songData, setSongData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -133,10 +134,6 @@ const SongDetailPage = () => {
     }
   };
 
-  const handleSongClick = (songId) => {
-    navigate(`/song/${songId}`);
-  };
-
   const handleArtistClick = (artistId) => {
     navigate(`/artist/${artistId}`);
   };
@@ -202,49 +199,16 @@ const SongDetailPage = () => {
                 <h2 className="text-2xl font-bold mb-4">Bài hát khác của {songData.artist.name}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {songData.artist_songs.map((song) => (
-                    <div
+                    <BigSongCard
                       key={song.id}
-                      className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-200 w-48 cursor-pointer"
-                      onClick={() => handleSongClick(song.id)}
-                    >
-                      <div className="relative">
-                        {song.image_url && (
-                          <img
-                            src={isValidImageUrl(song.image_url) ? song.image_url : 'https://via.placeholder.com/200x200?text=No+Image'}
-                            alt={song.title}
-                            className="w-full h-40 object-cover"
-                            onError={(e) => (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')}
-                          />
-                        )}
-                        {song?.exclusive && (
-                          <Crown className="absolute top-1 left-1 w-5 h-5 text-yellow-500" />
-                        )}
-                      </div>
-                      <div className="p-4">
-                        <h3 className="text-white font-semibold truncate">
-                          {song.title}
-                        </h3>
-                        <p className="text-gray-400 text-sm">Lượt nghe: {song.listen_count}</p>
-                      </div>
-                      <button
-                        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-green-500 text-white rounded-full p-3 hover:bg-green-600"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSongPlay(song);
-                        }}
-                        disabled={!song?.audio_url}
-                      >
-                        {currentSong?.id === song.id && isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-                      </button>
-                      <button
-                        className="absolute top-2 right-2 z-10 p-2 rounded-full bg-gray-900 bg-opacity-50 hover:bg-opacity-75 transition-opacity duration-200"
-                        onClick={(e) => handleFavoriteToggle(song, e)}
-                      >
-                        <Heart
-                          className={`w-5 h-5 ${favorites.includes(song.id) ? 'text-red-500 fill-red-500' : 'text-white'}`}
-                        />
-                      </button>
-                    </div>
+                      song={song}
+                      songList={songData.artist_songs}
+                      favorites={favorites}
+                      handleFavoriteToggle={handleFavoriteToggle}
+                      setError={setError}
+                      showListenCount={true}
+                      onPlay={handleSongPlay}
+                    />
                   ))}
                 </div>
               </div>

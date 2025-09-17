@@ -110,6 +110,10 @@ const Header = () => {
       <div className="relative" ref={menuRef}>
         {isAuthenticated ? (
           <div className="flex items-center gap-2">
+            <span className="border border-yellow-400 text-yellow-400 px-2 py-1 rounded-full flex items-center gap-1 text-sm font-semibold">
+              <span className="relative top-[-2px]">👑</span> VIP
+            </span>
+
             <img
               src={avatarUrl}
               alt="Avatar"

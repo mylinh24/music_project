@@ -28,6 +28,10 @@ class User extends Model {
                 type: DataTypes.BLOB('long'), // lưu dữ liệu nhị phân (ảnh, file)
                 allowNull: true,
             },
+            vip: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            },
         }, {
             sequelize,
             modelName: 'User',
