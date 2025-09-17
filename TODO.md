@@ -1,1 +1,2 @@
 - [x] Sửa lỗi thiếu thuộc tính `exclusive` trong hàm `fetchMoreFavorites` của FavoritePage.jsx để icon vương miện hiện cho tất cả bài hát exclusive trong danh sách yêu thích.
+- [x] Sửa trang payment không load được bằng cách cải thiện xử lý lỗi và thêm kiểm tra xác thực trong Payment.jsx.
