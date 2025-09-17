@@ -20,8 +20,10 @@
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.14.4",
     "nodemailer": "^7.0.5",
-    "semver": "^7.5.4",
-    "sequelize": "^6.37.7"
+    "qrcode": "^1.5.4",
+    "semver": "^7.7.2",
+    "sequelize": "^6.37.7",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.28.3",
