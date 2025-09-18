@@ -50,7 +50,7 @@ const ForgotPasswordForm = () => {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                                 placeholder="Nhập email"
                                 required
                             />
@@ -75,7 +75,7 @@ const ForgotPasswordForm = () => {
                                 type="text"
                                 value={otp}
                                 onChange={(e) => setOtp(e.target.value)}
-                                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                                 placeholder="Nhập OTP"
                                 required
                             />
@@ -86,7 +86,7 @@ const ForgotPasswordForm = () => {
                                 type="password"
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                                 placeholder="Nhập mật khẩu mới"
                                 required
                             />

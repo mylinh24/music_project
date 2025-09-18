@@ -99,6 +99,16 @@ const handlePlayPause = (e) => {
 
     const handleDownload = (e) => {
         e.stopPropagation();
+        if (!isAuthenticated) {
+            alert('Bạn cần đăng nhập để tải xuống bài hát.');
+            setIsMenuOpen(false);
+            return;
+        }
+        if (!user?.vip) {
+            alert('Chỉ tài khoản VIP mới có thể tải xuống bài hát. Vui lòng đăng ký VIP để sử dụng tính năng này.');
+            setIsMenuOpen(false);
+            return;
+        }
         if (!song?.audio_url) {
             setError('Không có URL âm thanh để tải xuống.');
             return;
@@ -148,18 +158,19 @@ const handlePlayPause = (e) => {
             {/* Ảnh */}
             <div className="relative flex-shrink-0">
                 {song?.image_url && (
-                    <img
-                        src={
-                            isValidImageUrl(song.image_url)
-                                ? song.image_url
-                                : 'https://via.placeholder.com/200x200?text=No+Image'
-                        }
-                        alt={song?.title || 'No title'}
-                        className="w-20 h-20 object-cover rounded-md"
-                        onError={(e) =>
-                            (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')
-                        }
-                    />
+                <img
+                    src={
+                        isValidImageUrl(song.image_url)
+                            ? song.image_url
+                            : 'https://via.placeholder.com/200x200?text=No+Image'
+                    }
+                    alt={song?.title || 'No title'}
+                    loading="lazy"
+                    className="w-20 h-20 object-cover rounded-md"
+                    onError={(e) =>
+                        (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')
+                    }
+                />
                 )}
             </div>
 
