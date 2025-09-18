@@ -67,7 +67,6 @@ const ProfilePage = () => {
       const dataToSend = {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email,
       };
 
       if (formData.avatar) {
@@ -117,12 +116,12 @@ const ProfilePage = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-200 to-purple-200">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-          <p className="text-gray-700 mb-4">Vui lòng đăng nhập để xem thông tin cá nhân.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-200 to-purple-200 pt-[100px]">
+        <div className="max-w-sm w-full bg-white rounded-xl shadow-md p-6 text-center">
+          <p className="text-gray-700 text-sm mb-3">Vui lòng đăng nhập để xem thông tin cá nhân.</p>
           <Link
             to="/login"
-            className="px-5 py-2 rounded-lg bg-blue-500 text-white font-semibold shadow hover:bg-blue-600 transition"
+            className="px-4 py-1.5 rounded-lg bg-blue-500 text-white text-sm font-medium shadow hover:bg-blue-600 transition"
           >
             Đăng nhập
           </Link>
@@ -132,96 +131,96 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-gray-100 py-10">
-      <div className="max-w-lg mx-auto bg-white rounded-2xl shadow-xl p-8 relative">
+    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-gray-100 py-8 pt-[100px]">
+      <div className="max-w-md mx-auto bg-white rounded-xl shadow-md p-6 relative">
         {/* Nút quay lại trang chủ */}
         {!editMode && (
           <button
             onClick={() => navigate('/')}
-            className="absolute top-4 left-4 flex items-center gap-2 text-gray-600 hover:text-gray-800 transition"
+            className="absolute top-3 left-3 flex items-center gap-1 text-gray-600 hover:text-gray-800 transition"
           >
-            <ArrowLeft size={20} /> <span className="font-medium">Trang Chủ</span>
+            <ArrowLeft size={16} /> <span className="text-sm font-medium">Trang Chủ</span>
           </button>
         )}
 
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
+        <h1 className="text-2xl font-bold text-center text-gray-800 mb-4">
           Thông Tin Cá Nhân
         </h1>
 
-        {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
+        {error && <p className="text-red-500 text-sm mb-3 text-center">{error}</p>}
 
         {userData ? (
           <div className="flex flex-col items-center">
-            <div className="relative mb-6">
+            <div className="relative mb-4">
               <img
                 src={avatarPreview}
                 alt="Avatar"
-                className="w-32 h-32 rounded-full object-cover border-4 border-blue-200 shadow-md"
+                className="w-24 h-24 rounded-full object-cover border-3 border-blue-200 shadow-sm"
                 onError={(e) => (e.target.src = DEFAULT_AVATAR)}
               />
               {editMode && (
-                <div className="mt-3 text-center">
+                <div className="mt-2 text-center">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleFileChange}
                     ref={fileInputRef}
-                    className="block w-full text-sm text-gray-600"
+                    className="block w-full text-xs text-gray-600"
                   />
                 </div>
               )}
             </div>
 
             {editMode ? (
-              <div className="w-full space-y-4">
+              <div className="w-full space-y-3">
                 <div>
-                  <label className="block text-gray-700 font-medium mb-1">Họ</label>
+                  <label className="block text-gray-700 font-medium text-sm mb-1">Họ</label>
                   <input
                     type="text"
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm text-black"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-700 font-medium mb-1">Tên</label>
+                  <label className="block text-gray-700 font-medium text-sm mb-1">Tên</label>
                   <input
                     type="text"
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm text-black"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-700 font-medium mb-1">Email</label>
+                  <label className="block text-gray-700 font-medium text-sm mb-1">Email</label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    disabled
+                    className="w-full p-2 border rounded-lg bg-gray-100 text-sm text-gray-500 cursor-not-allowed"
                   />
                 </div>
 
-                <div className="flex gap-3 mt-6">
+                <div className="flex gap-2 mt-4">
                   <button
                     onClick={handleSave}
-                    className="flex-1 bg-blue-500 text-white py-3 rounded-lg font-semibold shadow hover:bg-blue-600 transition"
+                    className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-blue-600 transition"
                   >
                     Lưu
                   </button>
                   <button
                     onClick={() => setEditMode(false)}
-                    className="flex-1 bg-gray-400 text-white py-3 rounded-lg font-semibold shadow hover:bg-gray-500 transition"
+                    className="flex-1 bg-gray-400 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-gray-500 transition"
                   >
                     Hủy
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="w-full space-y-4 text-gray-700">
+              <div className="w-full space-y-3 text-gray-700 text-sm">
                 <p>
                   <span className="font-semibold">Email:</span>{' '}
                   {userData.email || 'Chưa cập nhật'}
@@ -235,16 +234,16 @@ const ProfilePage = () => {
                   {userData.lastName || 'Chưa cập nhật'}
                 </p>
 
-                <div className="flex gap-3 mt-6">
+                <div className="flex gap-2 mt-4">
                   <button
                     onClick={() => setEditMode(true)}
-                    className="flex-1 bg-blue-500 text-white py-3 rounded-lg font-semibold shadow hover:bg-blue-600 transition"
+                    className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-blue-600 transition"
                   >
                     Chỉnh sửa
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="flex-1 bg-red-500 text-white py-3 rounded-lg font-semibold shadow hover:bg-red-600 transition"
+                    className="flex-1 bg-red-500 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-red-600 transition"
                   >
                     Đăng Xuất
                   </button>
@@ -253,7 +252,7 @@ const ProfilePage = () => {
             )}
           </div>
         ) : (
-          <p className="text-gray-600 text-center">Đang tải thông tin...</p>
+          <p className="text-gray-600 text-sm text-center">Đang tải thông tin...</p>
         )}
       </div>
     </div>
