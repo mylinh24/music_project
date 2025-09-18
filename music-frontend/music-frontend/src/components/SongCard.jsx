@@ -7,7 +7,7 @@ import axios from 'axios';
 
 const SongCard = ({ song, songList = [], setFavorites, favorites = [], setError, setShowLoginPopup }) => {
     const dispatch = useDispatch();
-    const { isAuthenticated, token } = useSelector((state) => state.auth);
+    const { isAuthenticated, token, user } = useSelector((state) => state.auth);
     const { currentSong, isPlaying } = useSelector((state) => state.player);
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,8 +18,17 @@ const SongCard = ({ song, songList = [], setFavorites, favorites = [], setError,
         return url && !url.startsWith('C:') && url.match(/\.(jpeg|jpg|png|gif)$/i);
     };
 
-    const handlePlayPause = (e) => {
+const handlePlayPause = (e) => {
         e.stopPropagation();
+        console.log('Song:', song.title, 'exclusive:', song.exclusive, 'isAuthenticated:', isAuthenticated, 'user.vip:', user?.vip);
+        if (song.exclusive && !isAuthenticated) {
+            alert('Bạn cần đăng nhập để nghe bài hát này.');
+            return;
+        }
+        if (song.exclusive && !user?.vip) {
+            alert('Bài hát này dành cho tài khoản VIP. Vui lòng nâng cấp để nghe.');
+            return;
+        }
         if (!song?.audio_url) {
             setError(
                 `Bài hát "${song?.title || 'Không xác định'}" không có URL âm thanh hợp lệ.`
@@ -124,7 +133,17 @@ const SongCard = ({ song, songList = [], setFavorites, favorites = [], setError,
     return (
         <div
             className="group relative flex items-center bg-gray-800 rounded-lg hover:bg-gray-700 transition-all duration-200 cursor-pointer p-3"
-            onClick={() => navigate(`/song/${song?.id || ''}`)}
+            onClick={() => {
+                if (song.exclusive && !isAuthenticated) {
+                    alert('Bạn cần đăng nhập để xem chi tiết bài hát này.');
+                    return;
+                }
+                if (song.exclusive && !user?.vip) {
+                    alert('Bài hát này dành cho tài khoản VIP. Vui lòng nâng cấp để xem chi tiết.');
+                    return;
+                }
+                navigate(`/song/${song?.id || ''}`);
+            }}
         >
             {/* Ảnh */}
             <div className="relative flex-shrink-0">

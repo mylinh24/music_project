@@ -21,3 +21,16 @@ export const authenticateToken = (req, res, next) => {
     res.status(500).json({ message: 'Lỗi xác minh token.' });
   }
 };
+
+export const optionalAuthenticateToken = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.userId = decoded.userId;
+    } catch (error) {
+      // Ignore invalid token for optional auth
+    }
+  }
+  next();
+};

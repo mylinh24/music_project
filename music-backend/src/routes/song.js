@@ -3,11 +3,12 @@ import song from '../models/song.js';
 import artist from '../models/artist.js';
 import category from '../models/category.js';
 import { getSongDetail, getSongsByCategory } from '../controllers/songController.js';
+import { authenticateToken, optionalAuthenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Get songs with optional sorting, limit, and pagination
-router.get('/songs', async (req, res) => {
+router.get('/songs', optionalAuthenticateToken, async (req, res) => {
     try {
         const { sort, limit, page } = req.query;
         let order = [];
@@ -35,6 +36,8 @@ router.get('/songs', async (req, res) => {
             offset,
         });
 
+
+
         // Map data to match frontend expectations
         const formattedSongs = songs.map(song => ({
             id: song.id,
@@ -56,9 +59,9 @@ router.get('/songs', async (req, res) => {
 });
 
 // Get songs by category
-router.get('/songs/category/:category', getSongsByCategory);
+router.get('/songs/category/:category', optionalAuthenticateToken, getSongsByCategory);
 
 // Get song detail by ID
-router.get('/song/:id', getSongDetail);
+router.get('/song/:id', authenticateToken, getSongDetail);
 
 export default router;

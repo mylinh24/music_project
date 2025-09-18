@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import QRCode from 'qrcode.react';
+import { QRCode } from 'react-qrcode-logo';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 
@@ -26,7 +26,7 @@ const Payment = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const { sessionId, userId } = response.data;
-        const baseUrl = process.env.REACT_APP_BASE_URL || 'http://localhost:6969';
+const baseUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:6969';
         setQrValue(`${baseUrl}/api/payment/simulate-success?sessionId=${sessionId}&userId=${userId}`);
       } catch (error) {
         const message = error.response?.data?.message || error.response?.data?.error || error.message || 'Có lỗi xảy ra khi tạo phiên thanh toán.';

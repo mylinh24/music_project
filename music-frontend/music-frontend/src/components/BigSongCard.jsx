@@ -7,6 +7,7 @@ import { setCurrentSong, setIsPlaying, setCurrentSongList, setCurrentSongIndex }
 const BigSongCard = ({ song, songList = [], favorites = [], handleFavoriteToggle, setError, showListenCount = false, onPlay }) => {
     const dispatch = useDispatch();
     const { currentSong, isPlaying } = useSelector((state) => state.player);
+    const { isAuthenticated, user } = useSelector((state) => state.auth);
     const navigate = useNavigate();
 
     const isValidImageUrl = (url) => {
@@ -15,6 +16,14 @@ const BigSongCard = ({ song, songList = [], favorites = [], handleFavoriteToggle
 
     const handlePlayPause = (e) => {
         e.stopPropagation();
+        if (song.exclusive && !isAuthenticated) {
+            alert('Bạn cần đăng nhập để nghe bài hát này.');
+            return;
+        }
+        if (song.exclusive && !user?.vip) {
+            alert('Bài hát này dành cho tài khoản VIP. Vui lòng nâng cấp để nghe.');
+            return;
+        }
         if (!song?.audio_url) {
             setError('Không tìm thấy URL âm thanh.');
             return;
@@ -36,7 +45,17 @@ const BigSongCard = ({ song, songList = [], favorites = [], handleFavoriteToggle
     return (
         <div
             className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-200 w-48 cursor-pointer"
-            onClick={() => navigate(`/song/${song?.id || ''}`)}
+            onClick={() => {
+                if (song.exclusive && !isAuthenticated) {
+                    alert('Bạn cần đăng nhập để xem chi tiết bài hát này.');
+                    return;
+                }
+                if (song.exclusive && !user?.vip) {
+                    alert('Bài hát này dành cho tài khoản VIP. Vui lòng nâng cấp để xem chi tiết.');
+                    return;
+                }
+                navigate(`/song/${song?.id || ''}`);
+            }}
         >
             <div className="relative">
                 {song?.image_url && (

@@ -36,7 +36,7 @@ const SongDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { isAuthenticated, token } = useSelector((state) => state.auth);
+  const { isAuthenticated, token, user } = useSelector((state) => state.auth);
   const { currentSong, isPlaying } = useSelector((state) => state.player);
   const [songData, setSongData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,14 +49,18 @@ const SongDetailPage = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.get(`http://localhost:6969/api/song/${id}`);
+        const response = await axios.get(`http://localhost:6969/api/song/${id}`, isAuthenticated && token ? { headers: { Authorization: `Bearer ${token}` } } : {});
         setSongData(response.data);
         const validSongs = response.data.artist_songs?.filter(song => song && song.id && song.audio_url) || [];
         dispatch(setCurrentSongList(validSongs));
         setLoading(false);
       } catch (err) {
         console.error('Failed to fetch song detail:', err);
-        setError('Không thể tải chi tiết bài hát. Vui lòng thử lại.');
+        if (err.response && err.response.status === 403 && err.response.data.error.includes('nâng cấp tài khoản VIP')) {
+          alert('Bài hát này dành cho tài khoản VIP. Vui lòng nâng cấp để nghe.');
+        } else {
+          setError('Không thể tải chi tiết bài hát. Vui lòng thử lại.');
+        }
         setLoading(false);
       }
     };
@@ -82,6 +86,14 @@ const SongDetailPage = () => {
   }, [isAuthenticated, token]);
 
   const handlePlayPause = () => {
+    if (songData.exclusive && !isAuthenticated) {
+      alert('Bạn cần đăng nhập để nghe bài hát này.');
+      return;
+    }
+    if (songData.exclusive && !user?.vip) {
+      alert('Bài hát này dành cho tài khoản VIP. Vui lòng nâng cấp để nghe.');
+      return;
+    }
     if (!songData?.audio_url) {
       setError('Không tìm thấy URL âm thanh.');
       return;

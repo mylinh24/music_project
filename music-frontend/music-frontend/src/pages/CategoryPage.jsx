@@ -23,7 +23,7 @@ class ErrorBoundary extends React.Component {
 const CategoryPage = () => {
     const { category } = useParams();
     const dispatch = useDispatch();
-    const { isAuthenticated, token } = useSelector((state) => state.auth);
+    const { isAuthenticated, token, user } = useSelector((state) => state.auth);
     const [songs, setSongs] = useState([]);
     const [favorites, setFavorites] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -38,7 +38,7 @@ const CategoryPage = () => {
                 setLoading(true);
                 setError(null);
                 const [songsResponse, favoritesResponse] = await Promise.all([
-                    axios.get(`http://localhost:6969/api/songs/category/${category}?page=1&limit=5`),
+                    axios.get(`http://localhost:6969/api/songs/category/${category}?page=1&limit=5`, isAuthenticated && token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
                     isAuthenticated && token
                         ? axios.get(`http://localhost:6969/api/favorites`, {
                             headers: { Authorization: `Bearer ${token}` },
@@ -64,7 +64,7 @@ const CategoryPage = () => {
     const fetchMoreSongs = async () => {
         try {
             const nextPage = page + 1;
-            const response = await axios.get(`http://localhost:6969/api/songs/category/${category}?page=${nextPage}&limit=5`);
+            const response = await axios.get(`http://localhost:6969/api/songs/category/${category}?page=${nextPage}&limit=5`, isAuthenticated && token ? { headers: { Authorization: `Bearer ${token}` } } : {});
             const newSongs = response.data.filter(
                 (song) => song && song.id && song.audio_url
             );

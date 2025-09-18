@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   setCurrentSong,
+  setCurrentSongIndex,
   setIsPlaying,
   setProgress,
   setVolume,
@@ -29,7 +30,7 @@ const AudioPlayer = () => {
   const { currentSong, isPlaying, progress, volume, playbackRate, currentSongList, currentSongIndex } = useSelector(
     (state) => state.player
   );
-  const { userId, isAuthenticated } = useSelector((state) => state.auth);
+  const { userId, isAuthenticated, user } = useSelector((state) => state.auth);
   const audioRef = useRef(null);
   const isPlayingRef = useRef(isPlaying);
 
@@ -211,7 +212,22 @@ const AudioPlayer = () => {
     if (!audio) return;
 
     const handleEnded = () => {
-      dispatch(playNextSong());
+      // Skip exclusive songs if user is not VIP
+      if (!user?.vip) {
+        let nextIndex = currentSongIndex + 1;
+        while (nextIndex < currentSongList.length && currentSongList[nextIndex].exclusive) {
+          nextIndex++;
+        }
+        if (nextIndex < currentSongList.length) {
+          dispatch(setCurrentSongIndex(nextIndex));
+          dispatch(setCurrentSong(currentSongList[nextIndex]));
+          dispatch(setIsPlaying(true));
+        } else {
+          dispatch(setIsPlaying(false));
+        }
+      } else {
+        dispatch(playNextSong());
+      }
     };
 
     // Xử lý sự kiện seeked (khi người dùng tua)
@@ -241,7 +257,7 @@ const AudioPlayer = () => {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('seeked', handleSeeked);
     };
-  }, [dispatch, updateProgress, resetListeningSession]);
+  }, [dispatch, updateProgress, resetListeningSession, user, currentSongIndex, currentSongList]);
 
   const handlePlayPause = () => {
     if (!currentSong?.audio_url) {
@@ -260,11 +276,43 @@ const AudioPlayer = () => {
   };
 
   const handleNext = () => {
-    dispatch(playNextSong());
+    // Allow clicking next always, but skip exclusive songs for non-VIP users
+    if (!user?.vip) {
+      let nextIndex = currentSongIndex + 1;
+      while (nextIndex < currentSongList.length && currentSongList[nextIndex].exclusive) {
+        nextIndex++;
+      }
+      if (nextIndex < currentSongList.length) {
+        dispatch(setCurrentSongIndex(nextIndex));
+        dispatch(setCurrentSong(currentSongList[nextIndex]));
+        dispatch(setIsPlaying(true));
+      } else {
+        // If no non-exclusive next song, just stop playing but allow button click
+        dispatch(setIsPlaying(false));
+      }
+    } else {
+      dispatch(playNextSong());
+    }
   };
 
   const handlePrev = () => {
-    dispatch(playPrevSong());
+    // Allow clicking prev always, but skip exclusive songs for non-VIP users
+    if (!user?.vip) {
+      let prevIndex = currentSongIndex - 1;
+      while (prevIndex >= 0 && currentSongList[prevIndex].exclusive) {
+        prevIndex--;
+      }
+      if (prevIndex >= 0) {
+        dispatch(setCurrentSongIndex(prevIndex));
+        dispatch(setCurrentSong(currentSongList[prevIndex]));
+        dispatch(setIsPlaying(true));
+      } else {
+        // If no non-exclusive prev song, just stop playing but allow button click
+        dispatch(setIsPlaying(false));
+      }
+    } else {
+      dispatch(playPrevSong());
+    }
   };
 
   const handleProgressChange = (e) => {
@@ -340,7 +388,7 @@ const AudioPlayer = () => {
 
       <div className="flex flex-col items-center w-1/3">
         <div className="flex gap-4 mb-2">
-          <button onClick={handlePrev} disabled={!currentSongList?.length || currentSongIndex === 0}>
+          <button onClick={handlePrev} disabled={!currentSongList?.length}>
             <SkipBack className="w-6 h-6" />
           </button>
           <button onClick={handlePlayPause}>
@@ -348,7 +396,7 @@ const AudioPlayer = () => {
           </button>
           <button
             onClick={handleNext}
-            disabled={!currentSongList?.length || currentSongIndex === currentSongList.length - 1}
+            disabled={!currentSongList?.length}
           >
             <SkipForward className="w-6 h-6" />
           </button>

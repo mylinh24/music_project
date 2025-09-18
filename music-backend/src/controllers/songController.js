@@ -1,6 +1,7 @@
 import Song from '../models/song.js';
 import Artist from '../models/artist.js';
 import Category from '../models/category.js';
+import User from '../models/user.js';
 
 export const getSongsByCategory = async (req, res) => {
   try {
@@ -61,6 +62,21 @@ export const getSongDetail = async (req, res) => {
       return res.status(400).json({ error: 'Song ID is required.' });
     }
 
+    // Get user VIP status
+    let isVip = false;
+    if (req.userId) {
+      const user = await User.findByPk(req.userId);
+      if (user) {
+        isVip = user.vip;
+      }
+    }
+
+    // Build where clause for artist songs
+    const artistSongsWhere = {};
+    if (!isVip) {
+      artistSongsWhere.exclusive = 0;
+    }
+
     const song = await Song.findByPk(songId, {
       attributes: ['id', 'title', 'lyrics', 'audio_url', 'image_url', 'release_date', 'listen_count', 'artist_id', 'exclusive'],
       include: [
@@ -71,6 +87,11 @@ export const getSongDetail = async (req, res) => {
 
     if (!song) {
       return res.status(404).json({ error: 'Song not found.' });
+    }
+
+    // If song is exclusive and user is not VIP, deny access
+    if (song.exclusive === 1 && !isVip) {
+      return res.status(403).json({ error: 'Bạn không có quyền truy cập bài hát này. Vui lòng nâng cấp tài khoản VIP.' });
     }
 
     // Get all songs by the same artist
@@ -117,4 +138,4 @@ export const getSongDetail = async (req, res) => {
     console.error('Error fetching song detail:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-};
+}
