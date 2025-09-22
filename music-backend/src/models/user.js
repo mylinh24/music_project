@@ -31,6 +31,10 @@ class User extends Model {
                 type: DataTypes.BOOLEAN,
                 defaultValue: false,
             },
+            contribution_points: {
+                type: DataTypes.INTEGER,
+                defaultValue: 0,
+            },
         }, {
             sequelize,
             modelName: 'User',

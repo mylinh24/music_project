@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { logout } from '../redux/authSlice';
 import axios from 'axios';
 import { ArrowLeft } from 'lucide-react'; // icon back
+import ContributionPoints from './ContributionPoints';
 
 const DEFAULT_AVATAR = 'https://via.placeholder.com/150?text=Avatar';
 
@@ -132,128 +133,138 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-gray-100 py-8 pt-[100px]">
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow-md p-6 relative">
-        {/* Nút quay lại trang chủ */}
-        {!editMode && (
-          <button
-            onClick={() => navigate('/')}
-            className="absolute top-3 left-3 flex items-center gap-1 text-gray-600 hover:text-gray-800 transition"
-          >
-            <ArrowLeft size={16} /> <span className="text-sm font-medium">Trang Chủ</span>
-          </button>
-        )}
+      <div className="max-w-2xl mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Profile Card */}
+          <div className="bg-white rounded-xl shadow-md p-6 relative">
+            {/* Nút quay lại trang chủ */}
+            {!editMode && (
+              <button
+                onClick={() => navigate('/')}
+                className="absolute top-3 left-3 flex items-center gap-1 text-gray-600 hover:text-gray-800 transition"
+              >
+                <ArrowLeft size={16} /> <span className="text-sm font-medium">Trang Chủ</span>
+              </button>
+            )}
 
-        <h1 className="text-2xl font-bold text-center text-gray-800 mb-4">
-          Thông Tin Cá Nhân
-        </h1>
+            <h1 className="text-2xl font-bold text-center text-gray-800 mb-4">
+              Thông Tin Cá Nhân
+            </h1>
 
-        {error && <p className="text-red-500 text-sm mb-3 text-center">{error}</p>}
+            {error && <p className="text-red-500 text-sm mb-3 text-center">{error}</p>}
 
-        {userData ? (
-          <div className="flex flex-col items-center">
-            <div className="relative mb-4">
-              <img
-                src={avatarPreview}
-                alt="Avatar"
-                className="w-24 h-24 rounded-full object-cover border-3 border-blue-200 shadow-sm"
-                onError={(e) => (e.target.src = DEFAULT_AVATAR)}
-              />
-              {editMode && (
-                <div className="mt-2 text-center">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    ref={fileInputRef}
-                    className="block w-full text-xs text-gray-600"
+            {userData ? (
+              <div className="flex flex-col items-center">
+                <div className="relative mb-4">
+                  <img
+                    src={avatarPreview}
+                    alt="Avatar"
+                    className="w-24 h-24 rounded-full object-cover border-3 border-blue-200 shadow-sm"
+                    onError={(e) => (e.target.src = DEFAULT_AVATAR)}
                   />
-                </div>
-              )}
-            </div>
-
-            {editMode ? (
-              <div className="w-full space-y-3">
-                <div>
-                  <label className="block text-gray-700 font-medium text-sm mb-1">Họ</label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm text-black"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 font-medium text-sm mb-1">Tên</label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm text-black"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 font-medium text-sm mb-1">Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    disabled
-                    className="w-full p-2 border rounded-lg bg-gray-100 text-sm text-gray-500 cursor-not-allowed"
-                  />
+                  {editMode && (
+                    <div className="mt-2 text-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        ref={fileInputRef}
+                        className="block w-full text-xs text-gray-600"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex gap-2 mt-4">
-                  <button
-                    onClick={handleSave}
-                    className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-blue-600 transition"
-                  >
-                    Lưu
-                  </button>
-                  <button
-                    onClick={() => setEditMode(false)}
-                    className="flex-1 bg-gray-400 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-gray-500 transition"
-                  >
-                    Hủy
-                  </button>
-                </div>
+                {editMode ? (
+                  <div className="w-full space-y-3">
+                    <div>
+                      <label className="block text-gray-700 font-medium text-sm mb-1">Họ</label>
+                      <input
+                        type="text"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium text-sm mb-1">Tên</label>
+                      <input
+                        type="text"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium text-sm mb-1">Email</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        disabled
+                        className="w-full p-2 border rounded-lg bg-gray-100 text-sm text-gray-500 cursor-not-allowed"
+                      />
+                    </div>
+
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={handleSave}
+                        className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-blue-600 transition"
+                      >
+                        Lưu
+                      </button>
+                      <button
+                        onClick={() => setEditMode(false)}
+                        className="flex-1 bg-gray-400 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-gray-500 transition"
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full space-y-3 text-gray-700 text-sm">
+                    <p>
+                      <span className="font-semibold">Email:</span>{' '}
+                      {userData.email || 'Chưa cập nhật'}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Họ:</span>{' '}
+                      {userData.firstName || 'Chưa cập nhật'}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Tên:</span>{' '}
+                      {userData.lastName || 'Chưa cập nhật'}
+                    </p>
+
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={() => setEditMode(true)}
+                        className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-blue-600 transition"
+                      >
+                        Chỉnh sửa
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="flex-1 bg-red-500 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-red-600 transition"
+                      >
+                        Đăng Xuất
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="w-full space-y-3 text-gray-700 text-sm">
-                <p>
-                  <span className="font-semibold">Email:</span>{' '}
-                  {userData.email || 'Chưa cập nhật'}
-                </p>
-                <p>
-                  <span className="font-semibold">Họ:</span>{' '}
-                  {userData.firstName || 'Chưa cập nhật'}
-                </p>
-                <p>
-                  <span className="font-semibold">Tên:</span>{' '}
-                  {userData.lastName || 'Chưa cập nhật'}
-                </p>
-
-                <div className="flex gap-2 mt-4">
-                  <button
-                    onClick={() => setEditMode(true)}
-                    className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-blue-600 transition"
-                  >
-                    Chỉnh sửa
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="flex-1 bg-red-500 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-red-600 transition"
-                  >
-                    Đăng Xuất
-                  </button>
-                </div>
-              </div>
+              <p className="text-gray-600 text-sm text-center">Đang tải thông tin...</p>
             )}
           </div>
-        ) : (
-          <p className="text-gray-600 text-sm text-center">Đang tải thông tin...</p>
-        )}
+
+          {/* Contribution Points Card */}
+          <div className="flex items-start">
+            <ContributionPoints />
+          </div>
+        </div>
       </div>
     </div>
   );

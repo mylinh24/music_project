@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { setCurrentSong, setIsPlaying, setCurrentSongList, setCurrentSongIndex } from '../redux/playerSlice';
 import Header from './Header';
 import BigSongCard from './BigSongCard';
+import CommentSection from './CommentSection';
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null };
@@ -224,6 +225,12 @@ const SongDetailPage = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Comment Section */}
+              <CommentSection
+                songId={songData.id}
+                isVip={user?.vip || false}
+              />
             </>
           )}
         </div>

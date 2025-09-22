@@ -1,0 +1,211 @@
+import Comment from '../models/comment.js';
+import UserContribution from '../models/userContribution.js';
+import User from '../models/user.js';
+import Song from '../models/song.js';
+
+export const createComment = async (req, res) => {
+    try {
+        const { song_id, content, rating } = req.body;
+        const user_id = req.userId;
+
+        if (!song_id || !content || !rating) {
+            return res.status(400).json({
+                error: 'Song ID, content và rating là bắt buộc.'
+            });
+        }
+
+        if (rating < 1 || rating > 5) {
+            return res.status(400).json({
+                error: 'Rating phải từ 1 đến 5.'
+            });
+        }
+
+        // Check if user exists
+        const user = await User.findByPk(user_id);
+        if (!user) {
+            return res.status(404).json({ error: 'User không tồn tại.' });
+        }
+
+        // Check if song exists
+        const song = await Song.findByPk(song_id);
+        if (!song) {
+            return res.status(404).json({ error: 'Bài hát không tồn tại.' });
+        }
+
+        // Check VIP permission for exclusive songs
+        if (song.exclusive && !user.vip) {
+            return res.status(403).json({
+                error: 'Bạn không có quyền bình luận bài hát này. Vui lòng nâng cấp tài khoản VIP.'
+            });
+        }
+
+        // Create comment
+        const comment = await Comment.create({
+            user_id,
+            song_id,
+            content,
+            rating,
+        });
+
+        // Add contribution points
+        await UserContribution.create({
+            user_id,
+            points: 10, // 10 points for each comment/rating
+            reason: 'Đánh giá và bình luận bài hát',
+        });
+
+        // Update user's total contribution points
+        const totalPoints = await UserContribution.sum('points', {
+            where: { user_id }
+        });
+
+        await user.update({ contribution_points: totalPoints });
+
+        // Get the created comment with user info
+        const commentWithUser = await Comment.findByPk(comment.id, {
+            include: [
+                {
+                    model: User,
+                    as: 'user',
+                    attributes: ['id', 'firstName', 'lastName', 'avatar'],
+                }
+            ],
+        });
+
+        res.status(201).json({
+            message: 'Bình luận thành công!',
+            comment: commentWithUser,
+            points_earned: 10,
+        });
+
+    } catch (error) {
+        console.error('Error creating comment:', error);
+        res.status(500).json({ error: 'Lỗi server nội bộ' });
+    }
+};
+
+export const getCommentsBySong = async (req, res) => {
+    try {
+        const { song_id } = req.params;
+        const { page = 1, limit = 10 } = req.query;
+
+        if (!song_id) {
+            return res.status(400).json({ error: 'Song ID là bắt buộc.' });
+        }
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        const { count, rows: comments } = await Comment.findAndCountAll({
+            where: { song_id },
+            include: [
+                {
+                    model: User,
+                    as: 'user',
+                    attributes: ['id', 'firstName', 'lastName', 'avatar'],
+                }
+            ],
+            order: [['created_at', 'DESC']],
+            limit: parseInt(limit),
+            offset,
+        });
+
+        res.json({
+            comments,
+            pagination: {
+                current_page: parseInt(page),
+                total_pages: Math.ceil(count / parseInt(limit)),
+                total_comments: count,
+            },
+        });
+
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        res.status(500).json({ error: 'Lỗi server nội bộ' });
+    }
+};
+
+export const updateComment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { content, rating } = req.body;
+        const user_id = req.userId;
+
+        const comment = await Comment.findByPk(id);
+
+        if (!comment) {
+            return res.status(404).json({ error: 'Bình luận không tồn tại.' });
+        }
+
+        if (comment.user_id !== user_id) {
+            return res.status(403).json({ error: 'Bạn không có quyền chỉnh sửa bình luận này.' });
+        }
+
+        if (rating && (rating < 1 || rating > 5)) {
+            return res.status(400).json({ error: 'Rating phải từ 1 đến 5.' });
+        }
+
+        await comment.update({
+            content: content || comment.content,
+            rating: rating !== undefined ? rating : comment.rating,
+        });
+
+        res.json({
+            message: 'Cập nhật bình luận thành công!',
+            comment,
+        });
+
+    } catch (error) {
+        console.error('Error updating comment:', error);
+        res.status(500).json({ error: 'Lỗi server nội bộ' });
+    }
+};
+
+export const deleteComment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user_id = req.userId;
+
+        const comment = await Comment.findByPk(id);
+
+        if (!comment) {
+            return res.status(404).json({ error: 'Bình luận không tồn tại.' });
+        }
+
+        if (comment.user_id !== user_id) {
+            return res.status(403).json({ error: 'Bạn không có quyền xóa bình luận này.' });
+        }
+
+        await comment.destroy();
+
+        res.json({ message: 'Xóa bình luận thành công!' });
+
+    } catch (error) {
+        console.error('Error deleting comment:', error);
+        res.status(500).json({ error: 'Lỗi server nội bộ' });
+    }
+};
+
+export const getUserContributionPoints = async (req, res) => {
+    try {
+        const user_id = req.userId;
+
+        const totalPoints = await UserContribution.sum('points', {
+            where: { user_id }
+        });
+
+        const contributions = await UserContribution.findAll({
+            where: { user_id },
+            order: [['created_at', 'DESC']],
+            limit: 10,
+        });
+
+        res.json({
+            total_points: totalPoints || 0,
+            recent_contributions: contributions,
+        });
+
+    } catch (error) {
+        console.error('Error fetching contribution points:', error);
+        res.status(500).json({ error: 'Lỗi server nội bộ' });
+    }
+};

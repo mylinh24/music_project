@@ -13,6 +13,7 @@ import profileRoutes from './routes/profileRoutes.js';
 import artistRoutes from './routes/artistRoutes.js';
 import favoritesRouter from './routes/favorites.js';
 import paymentRoutes from './routes/payment.js';
+import commentRoutes from './routes/comment.js';
 dotenv.config();
 const app = express();
 
@@ -27,7 +28,8 @@ app.use('/api', homeRoutes); // Thêm dòng này để kích hoạt homeRoutes
 app.use('/api', profileRoutes);
 app.use('/api', artistRoutes);
 app.use('/api/favorites', favoritesRouter);
-app.use('/api/payment', paymentRoutes); 
+app.use('/api/payment', paymentRoutes);
+app.use('/api/comments', commentRoutes);
 connectDB();
 
 const port = process.env.PORT || 6969;
