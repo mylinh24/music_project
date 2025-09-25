@@ -17,7 +17,11 @@ const LoginForm = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/home-page'); // Redirect to HomePage after successful login
+      if (user.role === 'admin') {
+        navigate('/admin'); // Redirect to Admin Dashboard for admin
+      } else {
+        navigate('/home-page'); // Redirect to HomePage for regular users
+      }
     }
   }, [user, navigate]);
 

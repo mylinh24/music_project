@@ -7,7 +7,7 @@ import { logout } from '../redux/authSlice';
 const DEFAULT_AVATAR =
   'https://res.cloudinary.com/di1eiccl8/image/upload/v1757750263/js1gl8rqTcqd6_yWH0qzMw_j0f0cl.webp';
 
-const Header = () => {
+const HeaderUser = () => {
   const dispatch = useDispatch();
   const { isAuthenticated, token, user } = useSelector((state) => state.auth);
   const [fullName, setFullName] = useState('');
@@ -101,10 +101,7 @@ const Header = () => {
             </Link>
           </div>
         </div>
-
       </div>
-
-
 
       {/* Bên phải */}
       <div className="relative" ref={menuRef}>
@@ -146,38 +143,6 @@ const Header = () => {
                 >
                   Bài hát yêu thích của tôi
                 </Link>
-                {user?.role === 'admin' && (
-                  <>
-                    <Link
-                      to="/admin"
-                      className="block px-4 py-2 text-white hover:bg-gray-700"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Admin Dashboard
-                    </Link>
-                    <Link
-                      to="/admin/users"
-                      className="block px-4 py-2 text-white hover:bg-gray-700"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Quản lý Users
-                    </Link>
-                    <Link
-                      to="/admin/songs"
-                      className="block px-4 py-2 text-white hover:bg-gray-700"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Quản lý Songs
-                    </Link>
-                    <Link
-                      to="/admin/artists"
-                      className="block px-4 py-2 text-white hover:bg-gray-700"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Quản lý Artists
-                    </Link>
-                  </>
-                )}
                 <button
                   onClick={handleLogout}
                   className="block w-full text-left px-4 py-2 text-white hover:bg-gray-700"
@@ -200,4 +165,4 @@ const Header = () => {
   );
 };
 
-export default Header;
+export default HeaderUser;

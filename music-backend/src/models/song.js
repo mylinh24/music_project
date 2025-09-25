@@ -39,7 +39,7 @@ const song = sequelize.define('song', {
         defaultValue: 0,
     },
     image_url: {
-        type: DataTypes.STRING(255),
+        type: DataTypes.TEXT,
         allowNull: true,
     },
     audio_url: {

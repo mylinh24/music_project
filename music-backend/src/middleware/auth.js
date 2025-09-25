@@ -34,3 +34,27 @@ export const optionalAuthenticateToken = (req, res, next) => {
   }
   next();
 };
+
+export const requireAdmin = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ message: 'Không tìm thấy token. Vui lòng đăng nhập.' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.userId;
+
+    // Check if user is admin
+    const User = (await import('../models/user.js')).default;
+    const user = await User.findByPk(req.userId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Bạn không có quyền truy cập.' });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Admin check error:', error);
+    res.status(500).json({ message: 'Lỗi xác minh quyền admin.' });
+  }
+};

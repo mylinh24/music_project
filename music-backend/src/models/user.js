@@ -47,6 +47,10 @@ class User extends Model {
                 type: DataTypes.INTEGER,
                 defaultValue: 0,
             },
+            role: {
+                type: DataTypes.ENUM('user', 'admin'),
+                defaultValue: 'user',
+            },
         }, {
             sequelize,
             modelName: 'User',

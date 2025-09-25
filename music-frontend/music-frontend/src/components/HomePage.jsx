@@ -126,7 +126,6 @@ const HomePage = () => {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-gray-900 text-white">
-        <Header />
         <div className="container mx-auto px-4 py-8 pt-20 pb-24">
           {showLoginPopup && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

@@ -19,7 +19,7 @@ export const getProfile = async (req, res) => {
 
     // Tìm người dùng trong cơ sở dữ liệu
     const user = await User.findByPk(userId, {
-      attributes: ['id', 'email', 'firstName', 'lastName', 'isVerified', 'avatar', 'vip'],
+      attributes: ['id', 'email', 'firstName', 'lastName', 'isVerified', 'avatar', 'vip', 'role'],
     });
 
     if (!user) {
@@ -48,6 +48,7 @@ export const getProfile = async (req, res) => {
       isVerified: user.isVerified,
       avatar: avatarData,
       vip: user.vip,
+      role: user.role,
     });
   } catch (error) {
     console.error('Lỗi khi lấy thông tin hồ sơ:', error.message, error.stack);

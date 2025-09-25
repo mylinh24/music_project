@@ -21,13 +21,10 @@ export const verifyOTP = createAsyncThunk('auth/verifyOTP', async ({ userId, otp
     }
 });
 
-export const loginUser = createAsyncThunk('auth/login', async (credentials, { rejectWithValue, dispatch }) => {
+export const loginUser = createAsyncThunk('auth/login', async (credentials, { rejectWithValue }) => {
     try {
         const response = await axios.post(`${API_URL}/login`, credentials);
         localStorage.setItem('token', response.data.token);
-
-        // Load user profile after successful login
-        dispatch(loadUser());
 
         return response.data;
     } catch (error) {
@@ -142,10 +139,10 @@ const authSlice = createSlice({
             .addCase(loginUser.fulfilled, (state, action) => {
                 state.loading = false;
                 state.token = action.payload.token;
-                state.userId = action.payload.userId; // Store userId temporarily
+                state.user = action.payload.user;
+                state.userId = action.payload.user.id;
                 state.isAuthenticated = true;
                 state.status = 'succeeded';
-                // Note: The user object will be updated when loadUser is called
             })
             .addCase(loginUser.rejected, (state, action) => {
                 state.loading = false;
