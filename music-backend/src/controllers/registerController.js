@@ -7,11 +7,32 @@ const salt = bcrypt.genSaltSync(10);
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 const register = async (req, res) => {
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName, referralCode } = req.body;
     try {
         console.log('Request body:', req.body);
         if (!email || !password || !firstName || !lastName) {
             return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ email, password, firstName, lastName' });
+        }
+
+        let referredByUser = null;
+        let referredById = null;
+
+        // Xử lý referral code nếu có
+        if (referralCode) {
+            referredByUser = await User.findOne({
+                where: { referral_code: referralCode }
+            });
+
+            if (referredByUser) {
+                referredById = referredByUser.id;
+
+                // Kiểm tra không được tự giới thiệu chính mình
+                if (referredById === req.userId) {
+                    return res.status(400).json({
+                        message: 'Không thể sử dụng mã giới thiệu của chính mình'
+                    });
+                }
+            }
         }
 
         const existingUser = await User.findOne({ where: { email } });
@@ -38,6 +59,7 @@ const register = async (req, res) => {
                 firstName,
                 lastName,
                 isVerified: false,
+                referred_by: referredById, // Lưu ID người giới thiệu
             });
         }
         console.log('User created/updated:', user.id);

@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { logout } from '../redux/authSlice';
 import axios from 'axios';
-import { ArrowLeft } from 'lucide-react'; // icon back
+import { ArrowLeft, Copy, Users, Gift } from 'lucide-react'; // icon back
 import ContributionPoints from './ContributionPoints';
 
 const DEFAULT_AVATAR = 'https://via.placeholder.com/150?text=Avatar';
@@ -23,6 +23,12 @@ const ProfilePage = () => {
   });
   const [avatarPreview, setAvatarPreview] = useState(DEFAULT_AVATAR);
   const fileInputRef = useRef(null);
+
+  // Referral states
+  const [referralData, setReferralData] = useState(null);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [referralError, setReferralError] = useState(null);
+  const [showReferral, setShowReferral] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && token) {
@@ -68,6 +74,8 @@ const ProfilePage = () => {
       const dataToSend = {
         firstName: formData.firstName,
         lastName: formData.lastName,
+        email: formData.email,
+
       };
 
       if (formData.avatar) {
@@ -115,6 +123,49 @@ const ProfilePage = () => {
     navigate('/');
   };
 
+  // Referral functions
+  const generateReferralCode = async () => {
+    setReferralLoading(true);
+    setReferralError(null);
+    try {
+      const response = await axios.post(
+        'http://localhost:6969/api/referral/generate',
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setReferralData(response.data);
+    } catch (err) {
+      setReferralError(err.response?.data?.error || 'Lỗi khi tạo mã giới thiệu');
+    } finally {
+      setReferralLoading(false);
+    }
+  };
+
+  const getReferralStats = async () => {
+    setReferralLoading(true);
+    setReferralError(null);
+    try {
+      const response = await axios.get(
+        'http://localhost:6969/api/referral/stats',
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setReferralData(response.data);
+    } catch (err) {
+      setReferralError(err.response?.data?.error || 'Lỗi khi lấy thống kê');
+    } finally {
+      setReferralLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    // You could add a toast notification here
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-200 to-purple-200 pt-[100px]">
@@ -133,10 +184,10 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-gray-100 py-8 pt-[100px]">
-      <div className="max-w-2xl mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="max-w-6xl mx-auto px-4  mb-20">
+        <div className="flex gap-6 overflow-x-auto pb-4">
           {/* Profile Card */}
-          <div className="bg-white rounded-xl shadow-md p-6 relative">
+          <div className="bg-white rounded-xl shadow-md p-8 relative flex-shrink-0 w-96">
             {/* Nút quay lại trang chủ */}
             {!editMode && (
               <button
@@ -261,8 +312,129 @@ const ProfilePage = () => {
           </div>
 
           {/* Contribution Points Card */}
-          <div className="flex items-start">
+          <div className="flex items-start flex-shrink-0 w-80">
             <ContributionPoints />
+          </div>
+
+          {/* Referral Card */}
+          <div className="bg-white rounded-xl shadow-md p-6 flex-shrink-0 w-80">
+            <div className="flex items-center gap-2 mb-4">
+              <Gift className="text-green-500" size={20} />
+              <h2 className="text-xl font-bold text-gray-800">Giới Thiệu Bạn Bè</h2>
+            </div>
+
+            {referralError && <p className="text-red-500 text-sm mb-3">{referralError}</p>}
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setShowReferral(!showReferral);
+                  if (!showReferral) {
+                    getReferralStats();
+                  }
+                }}
+                className="w-full bg-green-500 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-green-600 transition flex items-center justify-center gap-2"
+              >
+                <Users size={16} />
+                {showReferral ? 'Ẩn' : 'Hiển thị'} Mã Giới Thiệu
+              </button>
+
+              {showReferral && (
+                <div className="space-y-3">
+                  {!referralData && !referralLoading && (
+                    <button
+                      onClick={generateReferralCode}
+                      className="w-full bg-blue-500 text-white py-2 rounded-lg text-sm font-medium shadow hover:bg-blue-600 transition"
+                    >
+                      Tạo Mã Giới Thiệu
+                    </button>
+                  )}
+
+                  {referralLoading && (
+                    <p className="text-gray-600 text-sm text-center">Đang tải...</p>
+                  )}
+
+                  {referralData && (
+                    <div className="space-y-3">
+                      <div className="bg-gray-50 p-3 rounded-lg text-black">
+                        <p className="text-sm text-gray-600 mb-1">Mã giới thiệu:</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-white p-2 rounded border text-sm font-mono">
+                            {referralData.referral_code}
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard(referralData.referral_code)}
+                            className="p-2 text-gray-500 hover:text-gray-700 active:scale-95 active:text-gray-900 transition cursor-pointer"
+                            title="Sao chép mã"
+                          >
+                            <Copy size={16} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-3 rounded-lg text-black">
+                        <p className="text-sm text-gray-600 mb-1 ">Link giới thiệu:</p>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={referralData.referral_link || (referralData.referral_code ? `${window.location.origin}/register?ref=${referralData.referral_code}` : `${window.location.origin}/register`)}
+                            readOnly
+                            className="flex-1 bg-white p-2 rounded border text-sm"
+                          />
+                          <button
+                            onClick={() => copyToClipboard(referralData.referral_link || (referralData.referral_code ? `${window.location.origin}/register?ref=${referralData.referral_code}` : `${window.location.origin}/register`))}
+                            className="p-2 text-gray-500 hover:text-gray-700 active:scale-95 active:text-gray-900 transition cursor-pointer"
+                            title="Sao chép link"
+                          >
+                            <Copy size={16} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="bg-blue-50 p-3 rounded-lg text-center">
+                          <p className="text-blue-600 font-semibold">{referralData.referral_count || 0}</p>
+                          <p className="text-gray-600">Lượt giới thiệu</p>
+                        </div>
+                        <div className="bg-green-50 p-3 rounded-lg text-center">
+                          <p className="text-green-600 font-semibold">{referralData.total_points || 0}</p>
+                          <p className="text-gray-600">Điểm nhận được</p>
+                        </div>
+                      </div>
+
+                      {/* Danh sách user được giới thiệu */}
+                      {referralData.referred_users && referralData.referred_users.length > 0 && (
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Danh sách bạn bè đã giới thiệu ({referralData.referred_users.length})</h4>
+                          <div className="space-y-2 max-h-32 overflow-y-auto">
+                            {referralData.referred_users.map((user, index) => (
+                              <div key={index} className="flex items-center justify-between text-xs bg-white p-2 rounded">
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-800">
+                                    {user.firstName} {user.lastName}
+                                  </p>
+                                  <p className="text-gray-500">{user.email}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-green-600 font-medium">+50 điểm</p>
+                                  <p className="text-gray-400 text-xs">
+                                    {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="text-xs text-gray-500 text-center">
+                        <p>💰 Nhận 50 điểm cho mỗi bạn bè đăng ký thành công!</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

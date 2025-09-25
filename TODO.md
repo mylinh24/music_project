@@ -1,2 +1,0 @@
-- [x] Modify handleDownload in SongCard.jsx to check user VIP status and show notification if not VIP
-- [x] Add MoreVertical menu with VIP download check to BigSongCard.jsx

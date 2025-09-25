@@ -21,7 +21,7 @@ const BigSongCard = ({ song, songList = [], favorites = [], handleFavoriteToggle
     const handlePlayPause = (e) => {
         e.stopPropagation();
         if (song.exclusive && !isAuthenticated) {
-            alert('Bạn cần đăng nhập để nghe bài hát này.');
+            alert('Bài hát này dành cho tài khoản VIP. Vui lòng nâng cấp để nghe.');
             return;
         }
         if (song.exclusive && !user?.vip) {
@@ -61,7 +61,7 @@ const BigSongCard = ({ song, songList = [], favorites = [], handleFavoriteToggle
     const handleDownload = (e) => {
         e.stopPropagation();
         if (!isAuthenticated) {
-            alert('Bạn cần đăng nhập để tải xuống bài hát.');
+            alert('Chỉ tài khoản VIP mới có thể tải xuống bài hát. Vui lòng đăng ký VIP để sử dụng tính năng này.');
             setIsMenuOpen(false);
             return;
         }
@@ -105,14 +105,7 @@ const BigSongCard = ({ song, songList = [], favorites = [], handleFavoriteToggle
         <div
             className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-200 w-48 cursor-pointer"
             onClick={() => {
-                if (song.exclusive && !isAuthenticated) {
-                    alert('Bạn cần đăng nhập để xem chi tiết bài hát này.');
-                    return;
-                }
-                if (song.exclusive && !user?.vip) {
-                    alert('Bài hát này dành cho tài khoản VIP. Vui lòng nâng cấp để xem chi tiết.');
-                    return;
-                }
+              
                 navigate(`/song/${song?.id || ''}`);
             }}
         >

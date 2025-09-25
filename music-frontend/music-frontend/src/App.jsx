@@ -1,9 +1,9 @@
 import React, { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import store from './redux/store';
 import AudioPlayer from './components/AudioPlayer';
-import Header from './components/Header'; 
+import Header from './components/Header';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -19,11 +19,19 @@ const CategoryPage = lazy(() => import('./pages/CategoryPage'));
 const PaymentPage = lazy(() => import('./pages/Payment')); 
 
 function App() {
+  const location = useLocation();
+
+  // Pages that should NOT show the header
+  const pagesWithoutHeader = ['/login', '/register', '/forgot-password', '/profile'];
+
+  // Check if current page should show header
+  const shouldShowHeader = !pagesWithoutHeader.includes(location.pathname);
+
   return (
     <Provider store={store}>
       <div className="min-h-screen bg-gray-900 text-white">
-        {/* Thêm Header ở cấp cao nhất */}
-        <Header />
+        {/* Chỉ hiển thị Header cho các trang được chỉ định */}
+        {shouldShowHeader && <Header />}
         <Suspense fallback={<div className="min-h-screen bg-gray-900 text-white flex justify-center items-center">Đang tải...</div>}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
@@ -38,10 +46,10 @@ function App() {
             <Route path="/artist/:artistId" element={<ArtistDetailPage />} />
             <Route path="/favorites" element={<FavoritePage />} />
             <Route path="/song/:id" element={<SongDetailPage />} />
-            <Route path="/payment" element={<PaymentPage />} /> 
+            <Route path="/payment" element={<PaymentPage />} />
           </Routes>
         </Suspense>
-        <AudioPlayer /> 
+        <AudioPlayer />
       </div>
     </Provider>
   );

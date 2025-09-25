@@ -6,28 +6,42 @@ const salt = bcrypt.genSaltSync(10);
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 const verifyOTP = async (req, res) => {
-    const { userId, otp } = req.body;
-    try {
-        const otpRecord = await OTP.findOne({ where: { userId, type: 'register' } });
-        if (!otpRecord || otpRecord.expiresAt < new Date()) return res.status(400).json({ message: 'Invalid or expired OTP' });
+  const { userId, otp } = req.body;
+  try {
+    const otpRecord = await OTP.findOne({ where: { userId, type: 'register' } });
+    if (!otpRecord || otpRecord.expiresAt < new Date()) return res.status(400).json({ message: 'Invalid or expired OTP' });
 
-        const isValid = bcrypt.compareSync(otp, otpRecord.otp);
-        if (!isValid) return res.status(400).json({ message: 'Invalid OTP' });
+    const isValid = bcrypt.compareSync(otp, otpRecord.otp);
+    if (!isValid) return res.status(400).json({ message: 'Invalid OTP' });
 
-        const user = await User.findByPk(userId);
-        user.isVerified = true;
-        await user.save();
-        await otpRecord.destroy();
+    const user = await User.findByPk(userId);
+    user.isVerified = true;
+    await user.save();
+    await otpRecord.destroy();
 
-        res.status(200).json({ message: 'Email verified successfully' });
-    } catch (error) {
-        res.status(500).json({ message: 'Error in OTP verification', error: error.message });
+    // Tích điểm cho người giới thiệu nếu có
+    if (user.referred_by) {
+      const referrer = await User.findByPk(user.referred_by);
+      if (referrer) {
+        // Cập nhật trực tiếp contribution_points và referral_count
+        const currentPoints = referrer.contribution_points || 0;
+        const currentCount = referrer.referral_count || 0;
+        await referrer.update({
+          contribution_points: currentPoints + 50,
+          referral_count: currentCount + 1
+        });
+      }
     }
+
+    res.status(200).json({ message: 'Email verified successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error in OTP verification', error: error.message });
+  }
 };
 
 const resendOTP = async (req, res) => {
   const { email } = req.body;
-  console.log('Resend OTP request received:', { email }); // Thêm log để debug
+  console.log('Resend OTP request received:', { email });
   try {
     if (!email) {
       console.log('Missing email in request');

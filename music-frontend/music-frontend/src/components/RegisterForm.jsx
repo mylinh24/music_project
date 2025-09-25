@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { registerUser, verifyOTP, resendOTP } from "../redux/authSlice";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -12,13 +12,19 @@ const RegisterForm = () => {
   const [lastName, setLastName] = useState("");
   const [otp, setOtp] = useState("");
   const [showOtp, setShowOtp] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { loading, error, userId, status } = useSelector((state) => state.auth);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    dispatch(registerUser({ email, password, firstName, lastName }))
+    const registrationData = { email, password, firstName, lastName };
+    if (referralCode.trim()) {
+      registrationData.referralCode = referralCode.trim();
+    }
+    dispatch(registerUser(registrationData))
       .then(() => setShowOtp(true))
       .catch(() => toast.error("Đăng ký thất bại, vui lòng thử lại!"));
   };
@@ -41,6 +47,14 @@ const RegisterForm = () => {
   };
 
   useEffect(() => {
+    // Get referral code from URL parameters
+    const refCode = searchParams.get('ref');
+    if (refCode && refCode !== 'null' && refCode.trim() !== '') {
+      setReferralCode(refCode);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (status === "verified") {
       toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
       setTimeout(() => navigate("/login"), 2000);
@@ -51,9 +65,9 @@ const RegisterForm = () => {
   }, [status, error, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-center mb-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 ">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6 mt-0 mb-20 ">
+        <h2 className="text-2xl font-bold text-center">
           {showOtp ? "Xác thực OTP" : "Đăng ký"}
         </h2>
         {!showOtp ? (
@@ -64,7 +78,7 @@ const RegisterForm = () => {
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 placeholder="Nhập họ"
                 required
               />
@@ -75,7 +89,7 @@ const RegisterForm = () => {
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 placeholder="Nhập tên"
                 required
               />
@@ -86,7 +100,7 @@ const RegisterForm = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 placeholder="Nhập email"
                 required
               />
@@ -100,6 +114,16 @@ const RegisterForm = () => {
                 className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Nhập mật khẩu"
                 required
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-700">Mã giới thiệu (tích điểm cho người giới thiệu)</label>
+              <input
+                type="text"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                placeholder="Nhập mã giới thiệu nếu có"
               />
             </div>
             <button
@@ -126,7 +150,7 @@ const RegisterForm = () => {
                 type="text"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 placeholder="Nhập OTP"
                 required
               />

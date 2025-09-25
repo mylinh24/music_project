@@ -1,5 +1,4 @@
 import Comment from '../models/comment.js';
-import UserContribution from '../models/userContribution.js';
 import User from '../models/user.js';
 import Song from '../models/song.js';
 
@@ -47,19 +46,7 @@ export const createComment = async (req, res) => {
             rating,
         });
 
-        // Add contribution points
-        await UserContribution.create({
-            user_id,
-            points: 10, // 10 points for each comment/rating
-            reason: 'Đánh giá và bình luận bài hát',
-        });
-
-        // Update user's total contribution points
-        const totalPoints = await UserContribution.sum('points', {
-            where: { user_id }
-        });
-
-        await user.update({ contribution_points: totalPoints });
+        // Loại bỏ logic tích điểm từ comment
 
         // Get the created comment with user info
         const commentWithUser = await Comment.findByPk(comment.id, {
@@ -72,10 +59,14 @@ export const createComment = async (req, res) => {
             ],
         });
 
+        // Convert avatar BLOB to base64 if exists
+        if (commentWithUser.user.avatar) {
+            commentWithUser.user.avatar = commentWithUser.user.avatar.toString('base64');
+        }
+
         res.status(201).json({
             message: 'Bình luận thành công!',
             comment: commentWithUser,
-            points_earned: 10,
         });
 
     } catch (error) {
@@ -107,6 +98,13 @@ export const getCommentsBySong = async (req, res) => {
             order: [['created_at', 'DESC']],
             limit: parseInt(limit),
             offset,
+        });
+
+        // Convert avatar BLOB to base64 for all comments
+        comments.forEach(comment => {
+            if (comment.user && comment.user.avatar) {
+                comment.user.avatar = comment.user.avatar.toString('base64');
+            }
         });
 
         res.json({
@@ -185,27 +183,4 @@ export const deleteComment = async (req, res) => {
     }
 };
 
-export const getUserContributionPoints = async (req, res) => {
-    try {
-        const user_id = req.userId;
 
-        const totalPoints = await UserContribution.sum('points', {
-            where: { user_id }
-        });
-
-        const contributions = await UserContribution.findAll({
-            where: { user_id },
-            order: [['created_at', 'DESC']],
-            limit: 10,
-        });
-
-        res.json({
-            total_points: totalPoints || 0,
-            recent_contributions: contributions,
-        });
-
-    } catch (error) {
-        console.error('Error fetching contribution points:', error);
-        res.status(500).json({ error: 'Lỗi server nội bộ' });
-    }
-};

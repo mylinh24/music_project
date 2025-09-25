@@ -5,7 +5,6 @@ import {
     getCommentsBySong,
     updateComment,
     deleteComment,
-    getUserContributionPoints,
 } from '../controllers/commentController.js';
 
 const router = express.Router();
@@ -21,8 +20,5 @@ router.put('/:id', authenticateToken, updateComment);
 
 // Delete a comment
 router.delete('/:id', authenticateToken, deleteComment);
-
-// Get user's contribution points
-router.get('/contributions/points', authenticateToken, getUserContributionPoints);
 
 export default router;

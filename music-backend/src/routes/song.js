@@ -62,6 +62,6 @@ router.get('/songs', optionalAuthenticateToken, async (req, res) => {
 router.get('/songs/category/:category', optionalAuthenticateToken, getSongsByCategory);
 
 // Get song detail by ID
-router.get('/song/:id', authenticateToken, getSongDetail);
+router.get('/song/:id', optionalAuthenticateToken, getSongDetail);
 
 export default router;

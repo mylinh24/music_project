@@ -88,7 +88,7 @@ const SongDetailPage = () => {
 
   const handlePlayPause = () => {
     if (songData.exclusive && !isAuthenticated) {
-      alert('Bạn cần đăng nhập để nghe bài hát này.');
+      alert('Bài hát này dành cho tài khoản VIP. Đăng nhập để nghe nếu bạn đã là VIP.');
       return;
     }
     if (songData.exclusive && !user?.vip) {

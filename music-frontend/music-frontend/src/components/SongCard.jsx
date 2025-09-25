@@ -18,11 +18,11 @@ const SongCard = ({ song, songList = [], setFavorites, favorites = [], setError,
         return url && !url.startsWith('C:') && url.match(/\.(jpeg|jpg|png|gif)$/i);
     };
 
-const handlePlayPause = (e) => {
+    const handlePlayPause = (e) => {
         e.stopPropagation();
         console.log('Song:', song.title, 'exclusive:', song.exclusive, 'isAuthenticated:', isAuthenticated, 'user.vip:', user?.vip);
         if (song.exclusive && !isAuthenticated) {
-            alert('Bạn cần đăng nhập để nghe bài hát này.');
+            alert('Bài hát này dành cho tài khoản VIP. Vui lòng nâng cấp để nghe.');
             return;
         }
         if (song.exclusive && !user?.vip) {
@@ -100,7 +100,7 @@ const handlePlayPause = (e) => {
     const handleDownload = (e) => {
         e.stopPropagation();
         if (!isAuthenticated) {
-            alert('Bạn cần đăng nhập để tải xuống bài hát.');
+            alert('Chỉ tài khoản VIP mới có thể tải xuống bài hát. Vui lòng đăng ký VIP để sử dụng tính năng này.');
             setIsMenuOpen(false);
             return;
         }
@@ -144,33 +144,27 @@ const handlePlayPause = (e) => {
         <div
             className="group relative flex items-center bg-gray-800 rounded-lg hover:bg-gray-700 transition-all duration-200 cursor-pointer p-3"
             onClick={() => {
-                if (song.exclusive && !isAuthenticated) {
-                    alert('Bạn cần đăng nhập để xem chi tiết bài hát này.');
-                    return;
-                }
-                if (song.exclusive && !user?.vip) {
-                    alert('Bài hát này dành cho tài khoản VIP. Vui lòng nâng cấp để xem chi tiết.');
-                    return;
-                }
+
+
                 navigate(`/song/${song?.id || ''}`);
             }}
         >
             {/* Ảnh */}
             <div className="relative flex-shrink-0">
                 {song?.image_url && (
-                <img
-                    src={
-                        isValidImageUrl(song.image_url)
-                            ? song.image_url
-                            : 'https://via.placeholder.com/200x200?text=No+Image'
-                    }
-                    alt={song?.title || 'No title'}
-                    loading="lazy"
-                    className="w-20 h-20 object-cover rounded-md"
-                    onError={(e) =>
-                        (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')
-                    }
-                />
+                    <img
+                        src={
+                            isValidImageUrl(song.image_url)
+                                ? song.image_url
+                                : 'https://via.placeholder.com/200x200?text=No+Image'
+                        }
+                        alt={song?.title || 'No title'}
+                        loading="lazy"
+                        className="w-20 h-20 object-cover rounded-md"
+                        onError={(e) =>
+                            (e.target.src = 'https://via.placeholder.com/200x200?text=No+Image')
+                        }
+                    />
                 )}
             </div>
 

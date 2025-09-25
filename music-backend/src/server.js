@@ -14,6 +14,7 @@ import artistRoutes from './routes/artistRoutes.js';
 import favoritesRouter from './routes/favorites.js';
 import paymentRoutes from './routes/payment.js';
 import commentRoutes from './routes/comment.js';
+import referralRoutes from './routes/referral.js';
 dotenv.config();
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api', artistRoutes);
 app.use('/api/favorites', favoritesRouter);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/referral', referralRoutes);
 connectDB();
 
 const port = process.env.PORT || 6969;

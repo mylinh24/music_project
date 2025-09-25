@@ -63,7 +63,7 @@ const CommentSection = ({ songId, isVip }) => {
                 }
             );
 
-            alert(`Bình luận thành công! Bạn nhận được ${response.data.points_earned} điểm đóng góp.`);
+            alert(`Bình luận thành công!`);
             setNewComment('');
             setRating(5);
             setShowCommentForm(false);
@@ -86,9 +86,8 @@ const CommentSection = ({ songId, isVip }) => {
                 {[1, 2, 3, 4, 5].map((star) => (
                     <span
                         key={star}
-                        className={`text-2xl ${
-                            star <= rating ? 'text-yellow-400' : 'text-gray-300'
-                        } ${interactive ? 'cursor-pointer hover:text-yellow-300' : ''}`}
+                        className={`text-2xl ${star <= rating ? 'text-yellow-400' : 'text-gray-300'
+                            } ${interactive ? 'cursor-pointer hover:text-yellow-300' : ''}`}
                         onClick={interactive ? () => setRating(star) : undefined}
                     >
                         ★
@@ -140,7 +139,7 @@ const CommentSection = ({ songId, isVip }) => {
                         <textarea
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                             rows="4"
                             placeholder="Chia sẻ cảm nghĩ của bạn về bài hát..."
                             required

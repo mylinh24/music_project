@@ -35,6 +35,18 @@ class User extends Model {
                 type: DataTypes.INTEGER,
                 defaultValue: 0,
             },
+            referral_code: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            referred_by: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            referral_count: {
+                type: DataTypes.INTEGER,
+                defaultValue: 0,
+            },
         }, {
             sequelize,
             modelName: 'User',
