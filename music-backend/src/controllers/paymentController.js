@@ -1,4 +1,5 @@
 import PaymentService from '../services/paymentService.js'; // Chuyển sang import ES Modules
+import { VipPackage } from '../models/index.js';
 
 const getUserPoints = async (req, res) => {
   try {
@@ -32,13 +33,25 @@ const testGetUserPoints = async (req, res) => {
   }
 };
 
+const getVipPackages = async (req, res) => {
+  try {
+    console.log('Getting VIP packages');
+    const packages = await VipPackage.findAll();
+    console.log('VIP packages:', packages);
+    res.json({ packages });
+  } catch (err) {
+    console.error('Error getting VIP packages:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 const createSession = async (req, res) => {
   try {
     console.log('Creating payment session for userId:', req.userId);
     console.log('Request body:', req.body);
     const userId = req.userId; // Sử dụng req.userId từ authenticateToken
-    const { usePoints, pointsToConvert } = req.body;
-    const { sessionId, userId: returnedUserId, qrData } = await PaymentService.createPaymentSession(userId, { usePoints, pointsToConvert });
+    const { packageId, usePoints, pointsToConvert } = req.body;
+    const { sessionId, userId: returnedUserId, qrData } = await PaymentService.createPaymentSession(userId, packageId, { usePoints, pointsToConvert });
     console.log('Payment session created:', { sessionId, userId: returnedUserId, qrData });
     res.json({ sessionId, userId: returnedUserId, qrData });
   } catch (err) {
@@ -49,10 +62,10 @@ const createSession = async (req, res) => {
 
 const simulateSuccess = async (req, res) => {
   try {
-    const { sessionId, userId, pointsUsed } = req.query; // Lấy từ URL QR
-    if (!sessionId || !userId) throw new Error('Missing sessionId or userId');
+    const { sessionId, userId, packageId, pointsUsed } = req.query; // Lấy từ URL QR
+    if (!sessionId || !userId || !packageId) throw new Error('Missing sessionId, userId, or packageId');
 
-    const user = await PaymentService.completePayment(userId, sessionId, parseInt(pointsUsed) || 0);
+    const user = await PaymentService.completePayment(userId, sessionId, packageId, parseInt(pointsUsed) || 0);
 
     res.send(`
       <html>
@@ -162,4 +175,35 @@ const simulateSuccess = async (req, res) => {
   }
 };
 
-export default { getUserPoints, testGetUserPoints, createSession, simulateSuccess }; // Export default một object chứa các method
+const updateExpiredVips = async (req, res) => {
+  try {
+    console.log('Manually updating expired VIPs');
+    const { User, VipPurchase } = await import('../models/index.js');
+    
+    // Update users whose VIP has expired
+    const [affectedRows] = await User.sequelize.query(`
+      UPDATE users u
+      INNER JOIN (
+          SELECT user_id, MAX(expiry_date) as latest_expiry
+          FROM vip_purchases 
+          WHERE expiry_date < NOW()
+          GROUP BY user_id
+      ) expired_vips ON u.id = expired_vips.user_id
+      SET u.vip = 0
+      WHERE u.vip = 1
+      AND NOT EXISTS (
+          SELECT 1 FROM vip_purchases active_vip
+          WHERE active_vip.user_id = u.id
+          AND active_vip.expiry_date > NOW()
+      )
+    `);
+    
+    console.log(`Updated ${affectedRows} users' VIP status to expired.`);
+    res.json({ message: `Updated ${affectedRows} users' VIP status to expired.` });
+  } catch (err) {
+    console.error('Error updating expired VIPs:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export default { getUserPoints, testGetUserPoints, getVipPackages, createSession, simulateSuccess, updateExpiredVips }; // Export default một object chứa các method

@@ -1,5 +1,5 @@
 // src/services/paymentService.js
-import { User, VipPurchase } from '../models/index.js'; // Import VipPurchase model
+import { User, VipPurchase, VipPackage } from '../models/index.js'; // Import VipPurchase and VipPackage models
 import { v4 as uuidv4 } from 'uuid';
 
 // Constants
@@ -33,15 +33,18 @@ class PaymentService {
     };
   }
 
-  static async createPaymentSession(userId, options = {}) {
-    console.log('PaymentService.createPaymentSession called with:', { userId, options });
+  static async createPaymentSession(userId, packageId, options = {}) {
+    console.log('PaymentService.createPaymentSession called with:', { userId, packageId, options });
     const user = await User.findByPk(userId);
     if (!user) throw new Error('User not found');
+
+    const packageData = await VipPackage.findByPk(packageId);
+    if (!packageData) throw new Error('VIP package not found');
 
     const { usePoints = false, pointsToConvert = 0 } = options;
 
     let discountAmount = 0;
-    let finalAmount = VIP_PRICE;
+    let finalAmount = packageData.price;
 
     // Validate and calculate discount if user wants to use points
     if (usePoints) {
@@ -58,7 +61,7 @@ class PaymentService {
       }
 
       discountAmount = discountInfo.discountAmount;
-      finalAmount = VIP_PRICE - discountAmount;
+      finalAmount = packageData.price - discountAmount;
       console.log('Final amount calculated:', finalAmount);
     }
 
@@ -68,8 +71,9 @@ class PaymentService {
     const qrData = {
       sessionId,
       userId,
+      packageId,
       amount: finalAmount,
-      description: 'Nâng cấp tài khoản VIP - 1 năm',
+      description: `Nâng cấp tài khoản VIP - ${packageData.name} (${packageData.duration} ngày)`,
       usePoints,
       pointsToConvert: usePoints ? pointsToConvert : 0,
       discountAmount,
@@ -97,25 +101,29 @@ class PaymentService {
     return user;
   }
 
-  static async completePayment(userId, sessionId, pointsUsed = 0) {
+  static async completePayment(userId, sessionId, packageId, pointsUsed = 0) {
     const user = await User.findByPk(userId);
     if (!user) throw new Error('User not found');
 
+    const packageData = await VipPackage.findByPk(packageId);
+    if (!packageData) throw new Error('VIP package not found');
+
     // Calculate final amount after discount
-    let finalAmount = VIP_PRICE;
+    let finalAmount = packageData.price;
     if (pointsUsed > 0) {
       const discountInfo = this.calculateDiscount(pointsUsed);
-      finalAmount = VIP_PRICE - discountInfo.discountAmount;
+      finalAmount = packageData.price - discountInfo.discountAmount;
     }
 
-    // Calculate expiry date: 1 year from now
+    // Calculate expiry date based on package duration
     const paymentDate = new Date();
     const expiryDate = new Date(paymentDate);
-    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+    expiryDate.setDate(expiryDate.getDate() + packageData.duration);
 
     // Create VipPurchase record
     await VipPurchase.create({
       user_id: userId,
+      vippackage_id: packageId,
       payment_date: paymentDate,
       expiry_date: expiryDate,
       amount: finalAmount,

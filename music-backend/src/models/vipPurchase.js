@@ -33,6 +33,14 @@ const VipPurchase = sequelize.define('VipPurchase', {
         allowNull: false,
         defaultValue: 0,
     },
+    vippackage_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'vip_packages',
+            key: 'id',
+        },
+    },
 }, {
     tableName: 'vip_purchases',
     timestamps: false,

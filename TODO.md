@@ -9,3 +9,7 @@
 - [x] Update AdminUsers.jsx: Add profile links, edit buttons if needed
 - [x] Update AdminDashboard.jsx: Add quick action links to manage sections
 - [ ] Test functionality: Run app, verify play music, view details, and basic CRUD UI
+
+# TODO: Implement Automatic VIP Expiry Update
+
+- [x] Add MySQL EVENT to automatically update expired VIP status daily

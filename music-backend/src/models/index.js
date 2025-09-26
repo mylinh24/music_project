@@ -8,10 +8,12 @@ import Favorite from './favorites.js';
 import Comment from './comment.js';
 import UserContribution from './userContribution.js';
 import VipPurchase from './vipPurchase.js';
+import VipPackage from './vipPackage.js';
 
 // Initialize models
 User.init(sequelize);
 OTP.init(sequelize);
+VipPackage.init(sequelize);
 
 // Define associations
 Song.hasMany(Favorite, { foreignKey: 'song_id' });
@@ -28,5 +30,7 @@ UserContribution.belongsTo(User, { foreignKey: 'user_id' });
 // Add VipPurchase association
 User.hasMany(VipPurchase, { foreignKey: 'user_id' });
 VipPurchase.belongsTo(User, { foreignKey: 'user_id' });
+VipPackage.hasMany(VipPurchase, { foreignKey: 'vippackage_id' });
+VipPurchase.belongsTo(VipPackage, { foreignKey: 'vippackage_id' });
 
-export { User, OTP, Song, Artist, Category, Favorite, Comment, UserContribution, VipPurchase };
+export { User, OTP, Song, Artist, Category, Favorite, Comment, UserContribution, VipPurchase, VipPackage };

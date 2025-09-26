@@ -19,7 +19,11 @@ const Payment = () => {
   const [usePoints, setUsePoints] = useState(false);
   const [pointsToConvert, setPointsToConvert] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
-  const [finalAmount, setFinalAmount] = useState(5000000); // 5 million VND
+  const [finalAmount, setFinalAmount] = useState(0);
+
+  // VIP packages states
+  const [packages, setPackages] = useState([]);
+  const [selectedPackage, setSelectedPackage] = useState(null);
 
   const { token, user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
@@ -28,7 +32,6 @@ const Payment = () => {
   // Constants
   const POINTS_TO_VND_RATE = 5000; // 50 points = 5000 VND
   const POINTS_PER_CONVERSION = 50;
-  const VIP_PRICE = 5000000; // 5 million VND
 
   // Fetch user points
   const fetchUserPoints = async () => {
@@ -65,6 +68,23 @@ const Payment = () => {
     }
   };
 
+  // Fetch VIP packages
+  const fetchVipPackages = async () => {
+    try {
+      const response = await axios.get('http://localhost:6969/api/payment/vip-packages');
+      console.log('VIP packages response:', response.data);
+      const packagesData = response.data.packages || [];
+      setPackages(packagesData);
+      if (packagesData.length > 0) {
+        setSelectedPackage(packagesData[0]); // Select first package by default
+        setFinalAmount(packagesData[0].price);
+      }
+    } catch (error) {
+      console.error('Error fetching VIP packages:', error);
+      setErrorMessage('Không thể tải gói VIP. Vui lòng thử lại sau.');
+    }
+  };
+
   // Calculate discount based on points
   const calculateDiscount = (points) => {
     if (!points || points <= 0) return 0;
@@ -89,14 +109,14 @@ const Payment = () => {
     if (!checked) {
       setPointsToConvert(0);
       setDiscountAmount(0);
-      setFinalAmount(VIP_PRICE);
+      setFinalAmount(selectedPackage?.price || 0);
     } else {
       // Set default to minimum conversion (50 points)
       const defaultPoints = Math.min(POINTS_PER_CONVERSION, userPoints);
       setPointsToConvert(defaultPoints);
       const discountInfo = calculateDiscount(defaultPoints);
       setDiscountAmount(discountInfo.discountAmount);
-      setFinalAmount(VIP_PRICE - discountInfo.discountAmount);
+      setFinalAmount((selectedPackage?.price || 0) - discountInfo.discountAmount);
     }
   };
 
@@ -122,7 +142,7 @@ const Payment = () => {
     setPointsToConvert(points);
     const discountInfo = calculateDiscount(points);
     setDiscountAmount(discountInfo.discountAmount);
-    setFinalAmount(VIP_PRICE - discountInfo.discountAmount);
+    setFinalAmount((selectedPackage?.price || 0) - discountInfo.discountAmount);
   };
 
   // Function to create payment session
@@ -131,6 +151,7 @@ const Payment = () => {
     setErrorMessage('');
     try {
       const paymentData = {
+        packageId: selectedPackage?.id,
         usePoints,
         pointsToConvert: usePoints ? pointsToConvert : 0
       };
@@ -143,11 +164,11 @@ const Payment = () => {
 
       console.log('Payment session response:', response.data);
       const { sessionId, userId, qrData } = response.data;
-      const baseUrl = import.meta.env.VITE_BASE_URL || 'http://192.168.1.89:6969';
+      const baseUrl = import.meta.env.VITE_BASE_URL || 'http://192.168.1.93:6969';
 
       // Create QR code with URL that points to payment success page
       const pointsUsed = usePoints ? pointsToConvert : 0;
-      const qrUrl = `${baseUrl}/api/payment/simulate-success?sessionId=${sessionId}&userId=${userId}&pointsUsed=${pointsUsed}&amount=${finalAmount}`;
+      const qrUrl = `${baseUrl}/api/payment/simulate-success?sessionId=${sessionId}&userId=${userId}&pointsUsed=${pointsUsed}&amount=${finalAmount}&packageId=${selectedPackage?.id}`;
 
       setQrValue(qrUrl);
     } catch (error) {
@@ -159,10 +180,11 @@ const Payment = () => {
     }
   };
 
-  // Fetch user points on component mount
+  // Fetch user points and VIP packages on component mount
   useEffect(() => {
     if (token) {
       fetchUserPoints();
+      fetchVipPackages();
     }
   }, [token]);
 
@@ -203,6 +225,41 @@ const Payment = () => {
     <div className="container mx-auto px-4 py-8 pt-20 pb-24">
       <ToastContainer />
       <h1 className="text-2xl font-bold mb-4">Nâng cấp tài khoản VIP</h1>
+
+      {/* VIP Package Selection */}
+      <div className="bg-gray-800 rounded-lg p-6 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Calculator className="w-5 h-5 text-blue-400" />
+          <h2 className="text-lg font-semibold">Chọn gói VIP</h2>
+        </div>
+
+        {packages.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {packages.map((pkg) => (
+              <div
+                key={pkg.id}
+                onClick={() => {
+                  setSelectedPackage(pkg);
+                  setFinalAmount(usePoints ? pkg.price - discountAmount : pkg.price);
+                  setQrValue(''); // Clear QR when package changes
+                  setErrorMessage('');
+                }}
+                className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${selectedPackage?.id === pkg.id
+                    ? 'border-blue-500 bg-blue-900/20'
+                    : 'border-gray-600 hover:border-gray-500'
+                  }`}
+              >
+                <h3 className="text-lg font-bold text-white mb-2">{pkg.name}</h3>
+                <p className="text-gray-300 text-sm mb-2">{pkg.description}</p>
+                <p className="text-yellow-400 font-bold text-xl">{pkg.price.toLocaleString()} VND</p>
+                <p className="text-gray-400 text-xs">Thời hạn: {pkg.duration} ngày</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-400">Đang tải gói VIP...</p>
+        )}
+      </div>
 
       {/* Points Conversion Section - Always show the interface */}
       <div className="bg-gray-800 rounded-lg p-6 mb-6">
@@ -266,7 +323,7 @@ const Payment = () => {
             <div className="bg-gray-700 rounded-lg p-4">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-300">Giá gốc:</span>
-                <span className="text-white font-medium">{VIP_PRICE.toLocaleString()} VND</span>
+                <span className="text-white font-medium">{selectedPackage?.price.toLocaleString() || 0} VND</span>
               </div>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-300">Giảm giá từ điểm:</span>
