@@ -165,7 +165,6 @@ const Payment = () => {
       console.log('Payment session response:', response.data);
       const { sessionId, userId, qrData } = response.data;
       const baseUrl = import.meta.env.VITE_BASE_URL || 'http://192.168.1.97:6969';
-      const baseUrl = import.meta.env.VITE_BASE_URL || 'http://192.168.140.217:6969';
 
       // Create QR code with URL that points to payment success page
       const pointsUsed = usePoints ? pointsToConvert : 0;
