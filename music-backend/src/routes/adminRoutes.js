@@ -14,7 +14,12 @@ import {
   getAllCategories,
   updateArtist,
   deleteArtist,
-  getDashboardStats
+  getDashboardStats,
+  getRevenueStats,
+  getVipPurchasesList,
+  getNewCustomers,
+  getTopVipPackages,
+  getContributionPointsStats
 } from '../controllers/adminController.js';
 import { requireAdmin } from '../middleware/auth.js';
 
@@ -44,5 +49,12 @@ router.get('/categories', requireAdmin, getAllCategories);
 
 // Dashboard stats
 router.get('/stats', requireAdmin, getDashboardStats);
+
+// Statistics routes
+router.get('/stats/revenue', requireAdmin, getRevenueStats);
+router.get('/stats/vip-purchases', requireAdmin, getVipPurchasesList);
+router.get('/stats/new-customers', requireAdmin, getNewCustomers);
+router.get('/stats/top-packages', requireAdmin, getTopVipPackages);
+router.get('/stats/contribution-points', requireAdmin, getContributionPointsStats);
 
 export default router;

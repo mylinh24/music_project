@@ -164,7 +164,7 @@ const Payment = () => {
 
       console.log('Payment session response:', response.data);
       const { sessionId, userId, qrData } = response.data;
-      const baseUrl = import.meta.env.VITE_BASE_URL || 'http://192.168.1.93:6969';
+      const baseUrl = import.meta.env.VITE_BASE_URL || 'http://192.168.1.97:6969';
 
       // Create QR code with URL that points to payment success page
       const pointsUsed = usePoints ? pointsToConvert : 0;
@@ -245,8 +245,8 @@ const Payment = () => {
                   setErrorMessage('');
                 }}
                 className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${selectedPackage?.id === pkg.id
-                    ? 'border-blue-500 bg-blue-900/20'
-                    : 'border-gray-600 hover:border-gray-500'
+                  ? 'border-blue-500 bg-blue-900/20'
+                  : 'border-gray-600 hover:border-gray-500'
                   }`}
               >
                 <h3 className="text-lg font-bold text-white mb-2">{pkg.name}</h3>

@@ -1,8 +1,11 @@
+import { Op, Sequelize } from 'sequelize';
 import User from '../models/user.js';
 import Song from '../models/song.js';
 import Artist from '../models/artist.js';
 import Category from '../models/category.js';
 import Comment from '../models/comment.js';
+import VipPurchase from '../models/vipPurchase.js';
+import VipPackage from '../models/vipPackage.js';
 
 // User management
 export const getAllUsers = async (req, res) => {
@@ -250,14 +253,130 @@ export const getDashboardStats = async (req, res) => {
     const songCount = await Song.count();
     const artistCount = await Artist.count();
     const commentCount = await Comment.count();
+    const totalRevenue = await VipPurchase.sum('amount') || 0;
+    const newCustomers = await User.count({
+      where: {
+        createdAt: {
+          [Op.gte]: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // last 30 days
+        },
+      },
+    });
     res.json({
       users: userCount,
       songs: songCount,
       artists: artistCount,
       comments: commentCount,
+      totalRevenue,
+      newCustomers,
     });
   } catch (error) {
     console.error('Error fetching stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Revenue stats
+export const getRevenueStats = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const whereClause = {};
+    if (startDate && endDate) {
+      whereClause.payment_date = {
+        [Op.between]: [new Date(startDate), new Date(endDate)],
+      };
+    }
+    const totalRevenue = await VipPurchase.sum('amount', { where: whereClause }) || 0;
+    res.json({ totalRevenue });
+  } catch (error) {
+    console.error('Error fetching revenue stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// VIP purchases list
+export const getVipPurchasesList = async (req, res) => {
+  try {
+    const { limit = 10, offset = 0 } = req.query;
+    const purchases = await VipPurchase.findAll({
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'email', 'firstName', 'lastName'] },
+        { model: VipPackage, as: 'vippackage', attributes: ['id', 'name', 'price'] },
+      ],
+      attributes: ['id', 'payment_date', 'amount', 'points_used'],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['payment_date', 'DESC']],
+    });
+    res.json(purchases);
+  } catch (error) {
+    console.error('Error fetching VIP purchases:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// New customers
+export const getNewCustomers = async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const count = await User.count({
+      where: {
+        createdAt: {
+          [Op.gte]: startDate,
+        },
+      },
+    });
+    const customers = await User.findAll({
+      where: {
+        createdAt: {
+          [Op.gte]: startDate,
+        },
+      },
+      attributes: ['id', 'email', 'firstName', 'lastName', 'createdAt'],
+      order: [['createdAt', 'DESC']],
+    });
+    res.json({ count, customers });
+  } catch (error) {
+    console.error('Error fetching new customers:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Top VIP packages
+export const getTopVipPackages = async (req, res) => {
+  try {
+    const topPackages = await VipPurchase.findAll({
+      attributes: [
+        'vippackage_id',
+        [Sequelize.fn('COUNT', Sequelize.col('vippackage_id')), 'purchaseCount'],
+        [Sequelize.fn('SUM', Sequelize.col('amount')), 'totalRevenue'],
+      ],
+      include: [
+        { model: VipPackage, as: 'vippackage', attributes: ['name', 'price'] },
+      ],
+      group: ['vippackage_id', 'vippackage.id', 'vippackage.name', 'vippackage.price'],
+      order: [[Sequelize.fn('COUNT', Sequelize.col('vippackage_id')), 'DESC']],
+      limit: 10,
+    });
+    res.json(topPackages);
+  } catch (error) {
+    console.error('Error fetching top VIP packages:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Contribution points stats
+export const getContributionPointsStats = async (req, res) => {
+  try {
+    const totalPoints = await User.sum('contribution_points') || 0;
+    const pointsList = await User.findAll({
+      attributes: ['id', 'email', 'firstName', 'lastName', 'contribution_points'],
+      order: [['contribution_points', 'DESC']],
+      limit: 10,
+    });
+    res.json({ totalPoints, pointsList });
+  } catch (error) {
+    console.error('Error fetching contribution points stats:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

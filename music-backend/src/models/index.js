@@ -28,9 +28,9 @@ User.hasMany(UserContribution, { foreignKey: 'user_id' });
 UserContribution.belongsTo(User, { foreignKey: 'user_id' });
 
 // Add VipPurchase association
-User.hasMany(VipPurchase, { foreignKey: 'user_id' });
-VipPurchase.belongsTo(User, { foreignKey: 'user_id' });
-VipPackage.hasMany(VipPurchase, { foreignKey: 'vippackage_id' });
-VipPurchase.belongsTo(VipPackage, { foreignKey: 'vippackage_id' });
+User.hasMany(VipPurchase, { foreignKey: 'user_id', as: 'vipPurchases' });
+VipPurchase.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+VipPackage.hasMany(VipPurchase, { foreignKey: 'vippackage_id', as: 'vipPurchases' });
+VipPurchase.belongsTo(VipPackage, { foreignKey: 'vippackage_id', as: 'vippackage' });
 
 export { User, OTP, Song, Artist, Category, Favorite, Comment, UserContribution, VipPurchase, VipPackage };
