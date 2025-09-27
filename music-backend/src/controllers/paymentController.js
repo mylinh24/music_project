@@ -1,5 +1,7 @@
 import PaymentService from '../services/paymentService.js'; // Chuyển sang import ES Modules
 import { VipPackage } from '../models/index.js';
+import { sendAdminNotification } from '../services/emailService.js';
+import { broadcastToAdmins } from '../websocket.js';
 
 const getUserPoints = async (req, res) => {
   try {
@@ -66,6 +68,15 @@ const simulateSuccess = async (req, res) => {
     if (!sessionId || !userId || !packageId) throw new Error('Missing sessionId, userId, or packageId');
 
     const user = await PaymentService.completePayment(userId, sessionId, packageId, parseInt(pointsUsed) || 0);
+
+    // Send notifications to admin
+    const message = `New VIP purchase: User ${user.firstName} ${user.lastName} (${user.email}) purchased VIP package.`;
+    broadcastToAdmins({ type: 'vip_purchase', message });
+    try {
+        await sendAdminNotification('New VIP Purchase', message);
+    } catch (emailError) {
+        console.error('Failed to send admin email notification:', emailError);
+    }
 
     res.send(`
       <html>

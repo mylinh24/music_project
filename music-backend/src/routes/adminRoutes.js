@@ -19,7 +19,8 @@ import {
   getVipPurchasesList,
   getNewCustomers,
   getTopVipPackages,
-  getContributionPointsStats
+  getContributionPointsStats,
+  getMonthlyRevenueStats
 } from '../controllers/adminController.js';
 import { requireAdmin } from '../middleware/auth.js';
 
@@ -52,6 +53,7 @@ router.get('/stats', requireAdmin, getDashboardStats);
 
 // Statistics routes
 router.get('/stats/revenue', requireAdmin, getRevenueStats);
+router.get('/stats/monthly-revenue', requireAdmin, getMonthlyRevenueStats);
 router.get('/stats/vip-purchases', requireAdmin, getVipPurchasesList);
 router.get('/stats/new-customers', requireAdmin, getNewCustomers);
 router.get('/stats/top-packages', requireAdmin, getTopVipPackages);

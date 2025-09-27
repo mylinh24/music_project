@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { User, OTP } from '../models/index.js';
-import { sendOTP } from '../services/emailService.js';
+import { sendOTP, sendAdminNotification } from '../services/emailService.js';
+import { broadcastToAdmins } from '../websocket.js';
 
 const salt = bcrypt.genSaltSync(10);
 
@@ -63,6 +64,15 @@ const register = async (req, res) => {
             });
         }
         console.log('User created/updated:', user.id);
+
+        // Send notifications to admin
+        const message = `New user registered: ${user.firstName} ${user.lastName} (${user.email})`;
+        broadcastToAdmins({ type: 'new_user', message });
+        try {
+            await sendAdminNotification('New User Registration', message);
+        } catch (emailError) {
+            console.error('Failed to send admin email notification:', emailError);
+        }
 
         // Xóa OTP cũ (nếu có)
         await OTP.destroy({ where: { userId: user.id, type: 'register' } });

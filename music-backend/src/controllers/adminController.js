@@ -380,3 +380,26 @@ export const getContributionPointsStats = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+// Monthly revenue stats
+export const getMonthlyRevenueStats = async (req, res) => {
+  try {
+    const monthlyRevenue = await VipPurchase.findAll({
+      attributes: [
+        [Sequelize.fn('YEAR', Sequelize.col('payment_date')), 'year'],
+        [Sequelize.fn('MONTH', Sequelize.col('payment_date')), 'month'],
+        [Sequelize.fn('SUM', Sequelize.col('amount')), 'totalRevenue'],
+      ],
+      group: [Sequelize.fn('YEAR', Sequelize.col('payment_date')), Sequelize.fn('MONTH', Sequelize.col('payment_date'))],
+      order: [[Sequelize.fn('YEAR', Sequelize.col('payment_date')), 'ASC'], [Sequelize.fn('MONTH', Sequelize.col('payment_date')), 'ASC']],
+    });
+
+    const labels = monthlyRevenue.map(item => `${item.dataValues.year}-${String(item.dataValues.month).padStart(2, '0')}`);
+    const values = monthlyRevenue.map(item => parseFloat(item.dataValues.totalRevenue));
+
+    res.json({ labels, values });
+  } catch (error) {
+    console.error('Error fetching monthly revenue stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

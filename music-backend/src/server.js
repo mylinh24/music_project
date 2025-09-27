@@ -1,10 +1,12 @@
-// music-backend/src/app.js
+// music-backend/src/server.js
 import express from 'express';
+import http from 'http';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDB } from './config/configdb.js';
 import './models/index.js'; // Import models to ensure they are loaded
+import { initWebSocket } from './websocket.js';
 import authRoutes from './routes/auth.js';
 import songRoutes from './routes/song.js';
 import listenHistoryRoutes from './routes/listenHistory.js';
@@ -17,7 +19,9 @@ import commentRoutes from './routes/comment.js';
 import referralRoutes from './routes/referral.js';
 import adminRoutes from './routes/adminRoutes.js';
 dotenv.config();
+
 const app = express();
+const server = http.createServer(app);
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' })); // Increase limit for avatar uploads
@@ -34,9 +38,13 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/referral', referralRoutes);
 app.use('/api/admin', adminRoutes);
+
 connectDB();
 
+// Initialize WebSocket
+initWebSocket(server);
+
 const port = process.env.PORT || 6969;
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });

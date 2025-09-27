@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { User, OTP } from '../models/index.js';
-import { sendOTP } from '../services/emailService.js';
+import { sendOTP, sendAdminNotification } from '../services/emailService.js';
+import { broadcastToAdmins } from '../websocket.js';
 
 const salt = bcrypt.genSaltSync(10);
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -18,6 +19,8 @@ const verifyOTP = async (req, res) => {
     user.isVerified = true;
     await user.save();
     await otpRecord.destroy();
+
+
 
     // Tích điểm cho người giới thiệu nếu có
     if (user.referred_by) {

@@ -1,6 +1,8 @@
 import Comment from '../models/comment.js';
 import User from '../models/user.js';
 import Song from '../models/song.js';
+import { sendAdminNotification } from '../services/emailService.js';
+import { broadcastToAdmins } from '../websocket.js';
 
 export const createComment = async (req, res) => {
     try {
@@ -45,6 +47,15 @@ export const createComment = async (req, res) => {
             content,
             rating,
         });
+
+        // Send notifications to admin
+        const message = `New comment: User ${user.firstName} ${user.lastName} (${user.email}) commented on song ID ${song_id}.`;
+        broadcastToAdmins({ type: 'new_comment', message });
+        try {
+            await sendAdminNotification('New Comment', message);
+        } catch (emailError) {
+            console.error('Failed to send admin email notification:', emailError);
+        }
 
         // Loại bỏ logic tích điểm từ comment
 
