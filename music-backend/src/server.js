@@ -39,12 +39,16 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/referral', referralRoutes);
 app.use('/api/admin', adminRoutes);
 
-connectDB();
+async function startServer() {
+    await connectDB();
 
-// Initialize WebSocket
-initWebSocket(server);
+    // Initialize WebSocket
+    await initWebSocket(server);
 
-const port = process.env.PORT || 6969;
-server.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});
+    const port = process.env.PORT || 6969;
+    server.listen(port, () => {
+        console.log(`Server running on port ${port}`);
+    });
+}
+
+startServer();
