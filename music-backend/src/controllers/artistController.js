@@ -2,6 +2,7 @@
 import { Sequelize } from 'sequelize';
 import Artist from '../models/artist.js';
 import Song from '../models/song.js';
+import { Op } from 'sequelize';
 
 export const getAllArtists = async (req, res) => {
   try {
@@ -78,5 +79,40 @@ export const getArtistDetail = async (req, res) => {
   } catch (error) {
     console.error('Lỗi khi lấy chi tiết nghệ sĩ:', error);
     res.status(500).json({ error: 'Không thể tải chi tiết nghệ sĩ.' });
+  }
+};
+
+export const getArtistsBySearch = async (req, res) => {
+  try {
+    const { q, page, limit } = req.query;
+
+    let queryLimit = parseInt(limit) || 20;
+    let offset = 0;
+
+    if (page) {
+      offset = (parseInt(page) - 1) * queryLimit;
+    }
+
+    // Build where clause for artist name
+    let where = {};
+    if (q) {
+      where = {
+        ...where,
+        [Op.and]: Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), { [Op.like]: `%${q.toLowerCase()}%` }),
+      };
+    }
+
+    const artists = await Artist.findAll({
+      where,
+      attributes: ['id', 'name', 'image_url', 'total_listens'],
+      order: [['total_listens', 'DESC']],
+      limit: queryLimit,
+      offset,
+    });
+
+    res.json(artists);
+  } catch (error) {
+    console.error('Lỗi khi tìm kiếm nghệ sĩ:', error);
+    res.status(500).json({ error: 'Không thể tìm kiếm nghệ sĩ.' });
   }
 };

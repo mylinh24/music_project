@@ -2,7 +2,7 @@ import express from 'express';
 import song from '../models/song.js';
 import artist from '../models/artist.js';
 import category from '../models/category.js';
-import { getSongDetail, getSongsByCategory } from '../controllers/songController.js';
+import { getSongDetail, getSongsByCategory, getSongsBySearch } from '../controllers/songController.js';
 import { authenticateToken, optionalAuthenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -63,5 +63,8 @@ router.get('/songs/category/:category', optionalAuthenticateToken, getSongsByCat
 
 // Get song detail by ID
 router.get('/song/:id', optionalAuthenticateToken, getSongDetail);
+
+// Search songs by name and artist
+router.get('/songs/search', optionalAuthenticateToken, getSongsBySearch);
 
 export default router;

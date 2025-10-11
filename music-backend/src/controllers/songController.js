@@ -2,6 +2,8 @@ import Song from '../models/song.js';
 import Artist from '../models/artist.js';
 import Category from '../models/category.js';
 import User from '../models/user.js';
+import Sequelize from 'sequelize';
+import { Op } from 'sequelize';
 
 export const getSongsByCategory = async (req, res) => {
   try {
@@ -138,4 +140,66 @@ export const getSongDetail = async (req, res) => {
     console.error('Error fetching song detail:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-}
+};
+
+export const getSongsBySearch = async (req, res) => {
+  try {
+    const { q, artist, page, limit } = req.query;
+
+    let queryLimit = parseInt(limit) || 20;
+    let offset = 0;
+
+    if (page) {
+      offset = (parseInt(page) - 1) * queryLimit;
+    }
+
+    // Build where clause for song title
+    let where = {};
+    if (q) {
+      where = {
+        ...where,
+        [Op.and]: Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('title')), { [Op.like]: `%${q.toLowerCase()}%` }),
+      };
+    }
+
+    // Build include for artist
+    const include = [
+      {
+        model: Artist,
+        as: 'artist',
+        attributes: ['name'],
+        where: artist ? Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), { [Op.like]: `%${artist.toLowerCase()}%` }) : undefined,
+        required: artist ? true : false,
+      },
+      {
+        model: Category,
+        as: 'category',
+        attributes: ['name'],
+      },
+    ];
+
+    const songs = await Song.findAll({
+      where,
+      include,
+      attributes: ['id', 'title', 'audio_url', 'image_url', 'listen_count', 'release_date', 'exclusive'],
+      limit: queryLimit,
+      offset,
+    });
+
+    const formattedSongs = songs.map(song => ({
+      id: song.id,
+      title: song.title,
+      artist_name: song.artist ? song.artist.name : 'Unknown artist',
+      audio_url: song.audio_url,
+      image_url: song.image_url,
+      listen_count: song.listen_count,
+      release_date: song.release_date,
+      exclusive: song.exclusive,
+    }));
+
+    res.json(formattedSongs);
+  } catch (error) {
+    console.error('Error fetching songs by search:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

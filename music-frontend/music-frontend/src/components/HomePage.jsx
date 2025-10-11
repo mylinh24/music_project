@@ -37,6 +37,20 @@ const HomePage = () => {
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchArtist, setSearchArtist] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
+  // Artist search states
+  const [artistSearchQuery, setArtistSearchQuery] = useState('');
+  const [artistSearchResults, setArtistSearchResults] = useState([]);
+  const [artistSearchLoading, setArtistSearchLoading] = useState(false);
+  const [showArtistSearchResults, setShowArtistSearchResults] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -104,6 +118,53 @@ const HomePage = () => {
     }
   };
 
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim() && !searchArtist.trim()) {
+      setError('Vui lòng nhập tên bài hát hoặc tên ca sĩ để tìm kiếm.');
+      return;
+    }
+    try {
+      setSearchLoading(true);
+      setError(null);
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) params.append('q', searchQuery.trim());
+      if (searchArtist.trim()) params.append('artist', searchArtist.trim());
+      const response = await axios.get(`http://localhost:6969/api/songs/search?${params.toString()}`);
+      const resultsWithExclusive = response.data.map(song => ({
+        ...song,
+        exclusive: Boolean(song.exclusive),
+      }));
+      setSearchResults(resultsWithExclusive);
+      setShowSearchResults(true);
+      setSearchLoading(false);
+    } catch (err) {
+      setError('Không thể tìm kiếm bài hát.');
+      setSearchLoading(false);
+    }
+  };
+
+  const handleArtistSearch = async (e) => {
+    e.preventDefault();
+    if (!artistSearchQuery.trim()) {
+      setError('Vui lòng nhập tên nghệ sĩ để tìm kiếm.');
+      return;
+    }
+    try {
+      setArtistSearchLoading(true);
+      setError(null);
+      const params = new URLSearchParams();
+      params.append('q', artistSearchQuery.trim());
+      const response = await axios.get(`http://localhost:6969/api/artists/search?${params.toString()}`);
+      setArtistSearchResults(response.data || []);
+      setShowArtistSearchResults(true);
+      setArtistSearchLoading(false);
+    } catch (err) {
+      setError('Không thể tìm kiếm nghệ sĩ.');
+      setArtistSearchLoading(false);
+    }
+  };
+
   const renderArtistCard = (artist) => (
     <div className="group relative bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-200 w-48 text-center"
       onClick={() => navigate(`/artist/${artist?.id || ''}`)}>
@@ -140,6 +201,110 @@ const HomePage = () => {
           )}
           {loading && <p className="text-center text-gray-400">Đang tải...</p>}
           {error && <p className="text-center text-red-500">{error}</p>}
+
+          {/* Search Form */}
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-4">Tìm Kiếm Bài Hát</h2>
+            <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 mb-4">
+              <input
+                type="text"
+                placeholder="Tên bài hát..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                placeholder="Tên ca sĩ..."
+                value={searchArtist}
+                onChange={(e) => setSearchArtist(e.target.value)}
+                className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                disabled={searchLoading}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              >
+                {searchLoading ? 'Đang tìm...' : 'Tìm Kiếm'}
+              </button>
+            </form>
+          </section>
+
+          {/* Artist Search Form */}
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-4">Tìm Kiếm Nghệ Sĩ</h2>
+            <form onSubmit={handleArtistSearch} className="flex flex-col md:flex-row gap-4 mb-4">
+              <input
+                type="text"
+                placeholder="Tên nghệ sĩ..."
+                value={artistSearchQuery}
+                onChange={(e) => setArtistSearchQuery(e.target.value)}
+                className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                disabled={artistSearchLoading}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              >
+                {artistSearchLoading ? 'Đang tìm...' : 'Tìm Kiếm'}
+              </button>
+            </form>
+          </section>
+
+          {/* Search Results */}
+          {showSearchResults && searchResults.length > 0 && (
+            <section className="mb-12">
+              <h2 className="text-2xl font-bold mb-4">Kết Quả Tìm Kiếm Bài Hát</h2>
+              <Swiper
+                modules={[Navigation, Pagination, Mousewheel]}
+                spaceBetween={16}
+                slidesPerView={1}
+                navigation
+                pagination={{ clickable: true }}
+                mousewheel={{ forceToAxis: true }}
+                breakpoints={{
+                  640: { slidesPerView: 2 },
+                  768: { slidesPerView: 3 },
+                  1024: { slidesPerView: 5 },
+                }}>
+                {searchResults.map((song) => (
+                  <SwiperSlide key={song?.id || ''}>
+                    <BigSongCard
+                      song={song}
+                      songList={searchResults}
+                      favorites={favorites}
+                      handleFavoriteToggle={handleFavoriteToggle}
+                      setError={setError}
+                    />
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </section>
+          )}
+
+          {/* Artist Search Results */}
+          {showArtistSearchResults && artistSearchResults.length > 0 && (
+            <section className="mb-12">
+              <h2 className="text-2xl font-bold mb-4">Kết Quả Tìm Kiếm Nghệ Sĩ</h2>
+              <Swiper
+                modules={[Navigation, Pagination, Mousewheel]}
+                spaceBetween={16}
+                slidesPerView={1}
+                navigation
+                pagination={{ clickable: true }}
+                mousewheel={{ forceToAxis: true }}
+                breakpoints={{
+                  640: { slidesPerView: 2 },
+                  768: { slidesPerView: 3 },
+                  1024: { slidesPerView: 4 },
+                }}>
+                {artistSearchResults.map((artist) => (
+                  <SwiperSlide key={artist?.id || ''}>{renderArtistCard(artist)}</SwiperSlide>
+                ))}
+              </Swiper>
+            </section>
+          )}
+
           {isAuthenticated && userId && recentlyPlayed.length > 0 && (
             <section className="mb-12">
               <h2 className="text-2xl font-bold mb-4">Nghe Gần Đây</h2>

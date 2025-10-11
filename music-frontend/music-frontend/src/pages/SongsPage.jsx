@@ -6,6 +6,12 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import { setCurrentSongList } from '../redux/playerSlice';
 import Header from '../components/Header';
 import SongCard from '../components/SongCard';
+import BigSongCard from '../components/BigSongCard';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination, Mousewheel } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 
 class ErrorBoundary extends React.Component {
     state = { hasError: false };
@@ -30,6 +36,13 @@ const SongsPage = () => {
     const [showLoginPopup, setShowLoginPopup] = useState(false);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+
+    // Search states
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchArtist, setSearchArtist] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [showSearchResults, setShowSearchResults] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -76,11 +89,120 @@ const SongsPage = () => {
         }
     };
 
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        if (!searchQuery.trim() && !searchArtist.trim()) {
+            setError('Vui lòng nhập tên bài hát hoặc tên ca sĩ để tìm kiếm.');
+            return;
+        }
+        try {
+            setSearchLoading(true);
+            setError(null);
+            const params = new URLSearchParams();
+            if (searchQuery.trim()) params.append('q', searchQuery.trim());
+            if (searchArtist.trim()) params.append('artist', searchArtist.trim());
+            const response = await axios.get(`http://localhost:6969/api/songs/search?${params.toString()}`);
+            const resultsWithExclusive = response.data.map(song => ({
+                ...song,
+                exclusive: Boolean(song.exclusive),
+            }));
+            setSearchResults(resultsWithExclusive);
+            setShowSearchResults(true);
+            setSearchLoading(false);
+        } catch (err) {
+            setError('Không thể tìm kiếm bài hát.');
+            setSearchLoading(false);
+        }
+    };
+
     return (
         <ErrorBoundary>
             <div className="min-h-screen bg-gray-900 text-white">
                 <Header />
                 <div className="container mx-auto px-4 py-8 pt-20 pb-24">
+                    {/* Search Form */}
+                    <section className="mb-12">
+                        <h2 className="text-2xl font-bold mb-4">Tìm Kiếm Bài Hát</h2>
+                        <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 mb-4">
+                            <input
+                                type="text"
+                                placeholder="Tên bài hát..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <input
+                                type="text"
+                                placeholder="Tên ca sĩ..."
+                                value={searchArtist}
+                                onChange={(e) => setSearchArtist(e.target.value)}
+                                className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <button
+                                type="submit"
+                                disabled={searchLoading}
+                                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                            >
+                                {searchLoading ? 'Đang tìm...' : 'Tìm Kiếm'}
+                            </button>
+                        </form>
+                    </section>
+
+                    {/* Search Results */}
+                    {showSearchResults && searchResults.length > 0 && (
+                        <section className="mb-12">
+                            <h2 className="text-2xl font-bold mb-4">Kết Quả Tìm Kiếm Bài Hát</h2>
+                            <Swiper
+                                modules={[Navigation, Pagination, Mousewheel]}
+                                spaceBetween={16}
+                                slidesPerView={1}
+                                navigation
+                                pagination={{ clickable: true }}
+                                mousewheel={{ forceToAxis: true }}
+                                breakpoints={{
+                                    640: { slidesPerView: 2 },
+                                    768: { slidesPerView: 3 },
+                                    1024: { slidesPerView: 5 },
+                                }}>
+                                {searchResults.map((song) => (
+                                    <SwiperSlide key={song?.id || ''}>
+                                        <BigSongCard
+                                            song={song}
+                                            songList={searchResults}
+                                            favorites={favorites}
+                                            handleFavoriteToggle={(song, e) => {
+                                                e.stopPropagation();
+                                                if (!isAuthenticated) {
+                                                    e.preventDefault();
+                                                    setShowLoginPopup(true);
+                                                    return;
+                                                }
+                                                // Handle favorite toggle logic here
+                                                if (favorites.includes(song.id)) {
+                                                    axios.delete(`http://localhost:6969/api/favorites`, {
+                                                        data: { song_id: song.id },
+                                                        headers: { Authorization: `Bearer ${token}` },
+                                                    }).then(() => {
+                                                        setFavorites(favorites.filter(id => id !== song.id));
+                                                    }).catch(() => {
+                                                        setError('Không thể cập nhật danh sách yêu thích.');
+                                                    });
+                                                } else {
+                                                    axios.post(`http://localhost:6969/api/favorites`, { song_id: song.id }, { headers: { Authorization: `Bearer ${token}` } }).then(() => {
+                                                        setFavorites([...favorites, song.id]);
+                                                    }).catch(() => {
+                                                        setError('Không thể cập nhật danh sách yêu thích.');
+                                                    });
+                                                }
+                                            }}
+                                            setError={setError}
+                                        />
+                                    </SwiperSlide>
+                                ))}
+                            </Swiper>
+                        </section>
+                    )}
+
                     <h1 className="text-3xl font-bold mb-8">Tất cả bài hát</h1>
 
                     {/* Popup yêu cầu đăng nhập */}
