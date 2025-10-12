@@ -26,7 +26,7 @@ const AdminLogin = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white p-4">
       <form onSubmit={handleLogin} className="bg-gray-800 p-8 rounded-lg w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6">Đăng nhập Admin</h1>
+        <h1 className="text-2xl font-bold mb-6">Admin Login</h1>
         {error && <p className="mb-4 text-red-500">{error}</p>}
         <input
           type="email"
@@ -38,23 +38,23 @@ const AdminLogin = () => {
         />
         <input
           type="password"
-          placeholder="Mật khẩu"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           className="w-full mb-6 p-3 rounded bg-gray-700 text-white"
         />
         <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded font-semibold">
-          Đăng nhập
+          Login
         </button>
         <div className="mt-4 text-center">
           <a href="/admin/forgot-password" className="text-blue-400 hover:underline">
-            Quên mật khẩu?
+            Forgot Password?
           </a>
         </div>
         <div className="mt-2 text-center">
           <a href="/admin/register" className="text-blue-400 hover:underline">
-            Đăng ký
+            Register
           </a>
         </div>
       </form>

@@ -8,7 +8,7 @@ import { Otp } from '../entities/otp.entity';
 import { EmailService } from '../email/email.service';
 import { WebSocketGateway } from '../websocket/websocket.gateway';
 
-import { AdminGuard } from './admin.guard';
+import { JwtAuthGuard } from './jwt-auth.guard';
 const salt = bcrypt.genSaltSync(10);
 
 @Controller()
@@ -291,7 +291,7 @@ export class AuthController {
   }
 
   @Get('auth/me')
-  @UseGuards(AdminGuard)
+ @UseGuards(JwtAuthGuard)
   async getMe(@Req() req: any) {
     const userId = req.user.userId;
     const user = await this.userRepository.findOne({

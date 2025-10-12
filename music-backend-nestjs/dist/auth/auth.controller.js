@@ -55,7 +55,7 @@ const user_entity_1 = require("../entities/user.entity");
 const otp_entity_1 = require("../entities/otp.entity");
 const email_service_1 = require("../email/email.service");
 const websocket_gateway_1 = require("../websocket/websocket.gateway");
-const admin_guard_1 = require("./admin.guard");
+const jwt_auth_guard_1 = require("./jwt-auth.guard");
 const salt = bcrypt.genSaltSync(10);
 let AuthController = class AuthController {
     userRepository;
@@ -362,7 +362,7 @@ __decorate([
 ], AuthController.prototype, "resendOtp", null);
 __decorate([
     (0, common_1.Get)('auth/me'),
-    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),

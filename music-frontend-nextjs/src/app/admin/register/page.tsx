@@ -31,7 +31,7 @@ const AdminRegister = () => {
         password,
         referralCode: referralCode || undefined,
       });
-      setMessage('Đăng ký thành công. Vui lòng kiểm tra email để nhận OTP.');
+      setMessage('Registration successful. Please check your email for OTP.');
       setUserId(response.data.userId);
       setShowOtp(true);
     } catch (err: any) {
@@ -52,7 +52,7 @@ const AdminRegister = () => {
         otp,
         type: 'register',
       });
-      setMessage('OTP xác thực thành công. Đang chuyển hướng đến đăng nhập...');
+      setMessage('OTP verified successfully. Redirecting to login...');
       setTimeout(() => {
         router.push('/admin/login');
       }, 2000);
@@ -72,7 +72,7 @@ const AdminRegister = () => {
         email,
         type: 'register',
       });
-      setMessage('OTP đã được gửi lại đến email của bạn.');
+      setMessage('OTP resent to your email.');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to resend OTP');
     } finally {
@@ -83,7 +83,7 @@ const AdminRegister = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white p-4">
       <form onSubmit={showOtp ? handleVerifyOtp : handleRegister} className="bg-gray-800 p-8 rounded-lg w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6">Đăng ký Admin</h1>
+        <h1 className="text-2xl font-bold mb-6">Admin Register</h1>
         {message && <p className="mb-4 text-green-500">{message}</p>}
         {error && <p className="mb-4 text-red-500">{error}</p>}
         {!showOtp ? (
@@ -98,7 +98,7 @@ const AdminRegister = () => {
             />
             <input
               type="text"
-              placeholder="Họ"
+              placeholder="First Name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
@@ -106,7 +106,7 @@ const AdminRegister = () => {
             />
             <input
               type="text"
-              placeholder="Tên"
+              placeholder="Last Name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
@@ -114,7 +114,7 @@ const AdminRegister = () => {
             />
             <input
               type="password"
-              placeholder="Mật khẩu"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -122,36 +122,36 @@ const AdminRegister = () => {
             />
             <input
               type="text"
-              placeholder="Mã giới thiệu (tùy chọn)"
+              placeholder="Referral Code (optional)"
               value={referralCode}
               onChange={(e) => setReferralCode(e.target.value)}
               className="w-full mb-6 p-3 rounded bg-gray-700 text-white"
             />
             <button type="submit" disabled={loading} className="w-full bg-green-600 hover:bg-green-700 py-3 rounded font-semibold disabled:opacity-50">
-              {loading ? 'Đang đăng ký...' : 'Đăng ký'}
+              {loading ? 'Registering...' : 'Register'}
             </button>
           </>
         ) : (
           <>
             <input
               type="text"
-              placeholder="Nhập OTP"
+              placeholder="Enter OTP"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               required
               className="w-full mb-4 p-3 rounded bg-gray-700 text-white"
             />
             <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded font-semibold mb-4 disabled:opacity-50">
-              {loading ? 'Đang xác thực...' : 'Xác thực OTP'}
+              {loading ? 'Verifying...' : 'Verify OTP'}
             </button>
             <button type="button" onClick={handleResendOtp} disabled={loading} className="w-full bg-gray-600 hover:bg-gray-700 py-3 rounded font-semibold disabled:opacity-50">
-              {loading ? 'Đang gửi lại...' : 'Gửi lại OTP'}
+              {loading ? 'Resending...' : 'Resend OTP'}
             </button>
           </>
         )}
         <div className="mt-4 text-center">
           <a href="/admin/login" className="text-blue-400 hover:underline">
-            Đã có tài khoản? Đăng nhập
+            Already have an account? Login
           </a>
         </div>
       </form>
