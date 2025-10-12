@@ -43,17 +43,7 @@ const AdminUsers = () => {
     }
   };
 
-  const deleteUser = async (id: number) => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:3001/admin/users/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUsers(users.filter(user => user.id !== id));
-    } catch (error) {
-      console.error('Error deleting user:', error);
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -86,7 +76,6 @@ const AdminUsers = () => {
                 <td className="p-4">
                   <button onClick={() => router.push(`/admin/users/${user.id}`)} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded mr-2">View</button>
                   <button onClick={() => router.push(`/admin/users/${user.id}/edit`)} className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded mr-2">Edit</button>
-                  <button onClick={() => deleteUser(user.id)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded">Delete</button>
                 </td>
               </tr>
             ))}

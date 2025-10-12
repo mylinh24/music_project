@@ -51,14 +51,14 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/home-page" element={<ProtectedUserRoute><HomePage /></ProtectedUserRoute>} />
+            <Route path="/home-page" element={<HomePage />} />
             <Route path="/" element={<HomePage />} />
-            <Route path="/songs" element={<ProtectedUserRoute><SongsPage /></ProtectedUserRoute>} />
-            <Route path="/artists" element={<ProtectedUserRoute><ArtistsPage /></ProtectedUserRoute>} />
-            <Route path="/theloai/:category" element={<ProtectedUserRoute><CategoryPage /></ProtectedUserRoute>} />
-            <Route path="/artist/:artistId" element={<ProtectedAuthenticatedRoute><ArtistDetailPage /></ProtectedAuthenticatedRoute>} />
+            <Route path="/songs" element={<SongsPage />} />
+            <Route path="/artists" element={<ArtistsPage />} />
+            <Route path="/theloai/:category" element={<CategoryPage />} />
+            <Route path="/artist/:artistId" element={<ArtistDetailPage />} />
             <Route path="/favorites" element={<ProtectedUserRoute><FavoritePage /></ProtectedUserRoute>} />
-            <Route path="/song/:id" element={<ProtectedAuthenticatedRoute><SongDetailPage /></ProtectedAuthenticatedRoute>} />
+            <Route path="/song/:id" element={<SongDetailPage />} />
             <Route path="/payment" element={<ProtectedUserRoute><PaymentPage /></ProtectedUserRoute>} />
             <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
             <Route path="/admin/users" element={<ProtectedAdminRoute><AdminUsers /></ProtectedAdminRoute>} />

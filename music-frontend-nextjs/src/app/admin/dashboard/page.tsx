@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import RevenueChart from '../../../components/RevenueChart';
 import VipPurchasesTable from '../../../components/VipPurchasesTable';
 import TopPackagesChart from '../../../components/TopPackagesChart';
+import HeaderAdmin from '../../../components/HeaderAdmin';
 import io from 'socket.io-client';
 
 interface Stats {
@@ -149,6 +150,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      <HeaderAdmin />
       <div className="container mx-auto px-4 py-8 pt-20 pb-24">
         <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
 

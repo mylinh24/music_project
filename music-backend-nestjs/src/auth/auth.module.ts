@@ -7,6 +7,7 @@ import { User } from '../entities/user.entity';
 import { Otp } from '../entities/otp.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { AdminGuard } from './admin.guard';
+import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthController } from './auth.controller';
 import { EmailModule } from '../email/email.module';
 import { WebSocketModule } from '../websocket/websocket.module';
@@ -31,7 +32,7 @@ import { WebSocketModule } from '../websocket/websocket.module';
     WebSocketModule,
   ],
   controllers: [AuthController],
-  providers: [JwtStrategy, AdminGuard],
-  exports: [JwtStrategy, AdminGuard, JwtModule],
+  providers: [JwtStrategy, AdminGuard, JwtAuthGuard],
+  exports: [JwtStrategy, AdminGuard, JwtAuthGuard, JwtModule],
 })
 export class AuthModule {}

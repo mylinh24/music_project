@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AdminGuard } from '../auth/admin.guard';
 
@@ -126,5 +126,10 @@ export class AdminController {
   @Get('stats/contribution-points')
   getContributionPointsStats() {
     return this.adminService.getContributionPointsStats();
+  }
+
+  @Get('profile')
+  getProfile(@Req() req: any) {
+    return this.adminService.getProfile(req.user.userId);
   }
 }

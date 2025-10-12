@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UnauthorizedException, BadRequestException, HttpCode } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, BadRequestException, HttpCode, Get, UseGuards, Req, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -8,6 +8,7 @@ import { Otp } from '../entities/otp.entity';
 import { EmailService } from '../email/email.service';
 import { WebSocketGateway } from '../websocket/websocket.gateway';
 
+import { AdminGuard } from './admin.guard';
 const salt = bcrypt.genSaltSync(10);
 
 @Controller()
@@ -287,6 +288,25 @@ export class AuthController {
       updatedAt: new Date(),
     });
     return { message: 'OTP resent' };
+  }
+
+  @Get('auth/me')
+  @UseGuards(AdminGuard)
+  async getMe(@Req() req: any) {
+    const userId = req.user.userId;
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'email', 'firstName', 'lastName', 'avatar', 'role'],
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    // Convert avatar to base64 if Buffer
+    const response = { ...user } as any;
+    if (response.avatar && Buffer.isBuffer(response.avatar)) {
+      response.avatar = `data:image/png;base64,${response.avatar.toString('base64')}`;
+    }
+    return response;
   }
 
   private generateOTP(): string {

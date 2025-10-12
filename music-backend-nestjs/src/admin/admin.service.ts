@@ -341,4 +341,15 @@ export class AdminService {
 
     return { labels, values };
   }
+
+  async getProfile(userId: number): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'email', 'firstName', 'lastName', 'avatar', 'role'],
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
 }
