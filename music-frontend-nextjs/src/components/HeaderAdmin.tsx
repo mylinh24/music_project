@@ -13,6 +13,7 @@ const HeaderAdmin = () => {
   const [fullName, setFullName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(DEFAULT_AVATAR);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -27,7 +28,6 @@ const HeaderAdmin = () => {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
     if (token) {
       setIsLoggedIn(true);
       // Fetch admin profile
@@ -54,10 +54,22 @@ const HeaderAdmin = () => {
       setFullName('');
       setAvatarUrl(DEFAULT_AVATAR);
     }
-  }, []);
+  }, [token]);
+
+  useEffect(() => {
+    const checkToken = () => {
+      const current = localStorage.getItem('token') || '';
+      if (current !== token) {
+        setToken(current);
+      }
+    };
+    const interval = setInterval(checkToken, 1000);
+    return () => clearInterval(interval);
+  }, [token]);
 
   const handleLogout = () => {
     localStorage.removeItem('token'); // Xóa token
+    setToken('');
     setIsLoggedIn(false);
     setFullName('');
     setAvatarUrl(DEFAULT_AVATAR);
