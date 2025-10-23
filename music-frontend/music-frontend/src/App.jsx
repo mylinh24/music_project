@@ -28,6 +28,8 @@ const AdminAddArtist = lazy(() => import('./pages/AdminAddArtist'));
 const AdminEditArtist = lazy(() => import('./pages/AdminEditArtist'));
 const AdminAddSong = lazy(() => import('./pages/AdminAddSong'));
 const AdminEditSong = lazy(() => import('./pages/AdminEditSong'));
+const AdminComments = lazy(() => import('./pages/AdminComments'));
+const AdminVipPackages = lazy(() => import('./pages/AdminVipPackages'));
 const ProtectedAdminRoute = lazy(() => import('./components/ProtectedAdminRoute'));
 const ProtectedUserRoute = lazy(() => import('./components/ProtectedUserRoute'));
 
@@ -70,6 +72,8 @@ function App() {
             <Route path="/admin/add-artist" element={<ProtectedAdminRoute><AdminAddArtist /></ProtectedAdminRoute>} />
             <Route path="/admin/edit-artist/:artistId" element={<ProtectedAdminRoute><AdminEditArtist /></ProtectedAdminRoute>} />
             <Route path="/admin/artist/:artistId" element={<ProtectedAdminRoute><AdminArtistDetail /></ProtectedAdminRoute>} />
+            <Route path="/admin/comments" element={<ProtectedAdminRoute><AdminComments /></ProtectedAdminRoute>} />
+            <Route path="/admin/vip-packages" element={<ProtectedAdminRoute><AdminVipPackages /></ProtectedAdminRoute>} />
           </Routes>
         </Suspense>
         <AudioPlayer />

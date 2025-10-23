@@ -55,34 +55,36 @@ const RegisterForm = () => {
   }, [status, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900">
+    <div className="min-h-screen flex items-start justify-center bg-gray-900 p-8">
       <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-md p-6">
         <h2 className="text-2xl font-bold text-center mb-6 text-white">
           {showOtp ? "Xác thực OTP" : "Đăng ký"}
         </h2>
         {!showOtp ? (
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-gray-300">Họ</label>
-              <input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-400"
-                placeholder="Nhập họ"
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-300">Tên</label>
-              <input
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-400"
-                placeholder="Nhập tên"
-                required
-              />
+            <div className="flex space-x-4 mb-4">
+              <div className="flex-1">
+                <label className="block text-gray-300">Họ</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder="Nhập họ"
+                  required
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-gray-300">Tên</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder="Nhập tên"
+                  required
+                />
+              </div>
             </div>
             <div className="mb-4">
               <label className="block text-gray-300">Email</label>

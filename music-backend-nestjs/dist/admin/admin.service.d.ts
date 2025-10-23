@@ -66,4 +66,19 @@ export declare class AdminService {
         values: number[];
     }>;
     getProfile(userId: number): Promise<User>;
+    getAllComments(query: any): Promise<any>;
+    deleteComment(id: number): Promise<{
+        message: string;
+    }>;
+    updateCommentStatus(id: number, status: 'pending' | 'approved' | 'rejected'): Promise<{
+        message: string;
+    }>;
+    getAllVipPackages(): Promise<VipPackage[]>;
+    createVipPackage(vipPackageData: Partial<VipPackage>): Promise<VipPackage>;
+    updateVipPackage(id: number, updates: Partial<VipPackage>): Promise<{
+        message: string;
+    }>;
+    deleteVipPackage(id: number): Promise<{
+        message: string;
+    }>;
 }

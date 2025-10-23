@@ -53,4 +53,21 @@ export declare class AdminController {
         pointsList: import("../entities/user.entity").User[];
     }>;
     getProfile(req: any): Promise<import("../entities/user.entity").User>;
+    getAllComments(query: any): Promise<any>;
+    deleteComment(id: string): Promise<{
+        message: string;
+    }>;
+    updateCommentStatus(id: string, body: {
+        status: 'pending' | 'approved' | 'rejected';
+    }): Promise<{
+        message: string;
+    }>;
+    getAllVipPackages(): Promise<import("../entities/vip-package.entity").VipPackage[]>;
+    createVipPackage(vipPackageData: any): Promise<import("../entities/vip-package.entity").VipPackage>;
+    updateVipPackage(id: string, updates: any): Promise<{
+        message: string;
+    }>;
+    deleteVipPackage(id: string): Promise<{
+        message: string;
+    }>;
 }

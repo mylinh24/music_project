@@ -13,7 +13,7 @@ const HeaderAdmin = () => {
   const [fullName, setFullName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(DEFAULT_AVATAR);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [token, setToken] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -92,6 +92,12 @@ const HeaderAdmin = () => {
         </Link>
         <Link href="/admin/artists" className="text-red-400 hover:underline font-semibold">
           Quản lý Artists
+        </Link>
+        <Link href="/admin/comments" className="text-red-400 hover:underline font-semibold">
+          Quản lý Comments
+        </Link>
+        <Link href="/admin/vip-packages" className="text-red-400 hover:underline font-semibold">
+          Quản lý Gói VIP
         </Link>
       </div>
 

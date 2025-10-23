@@ -167,10 +167,10 @@ const AdminDashboard = () => {
             <h2 className="text-xl font-semibold mb-2">Artists</h2>
             <p className="text-3xl font-bold text-purple-400">{stats.artists}</p>
           </Link>
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:bg-gray-700 transition-all duration-200">
+          <Link href="/admin/comments" className="bg-gray-800 p-6 rounded-lg shadow-lg hover:bg-gray-700 transition-all duration-200 block">
             <h2 className="text-xl font-semibold mb-2">Comments</h2>
             <p className="text-3xl font-bold text-red-400">{stats.comments}</p>
-          </div>
+          </Link>
         </div>
 
         {/* Notifications */}

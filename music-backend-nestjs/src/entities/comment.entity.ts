@@ -19,6 +19,9 @@ export class Comment {
   @Column()
   rating: number;
 
+  @Column({ type: 'enum', enum: ['pending', 'approved', 'rejected'], default: 'approved' })
+  status: 'pending' | 'approved' | 'rejected';
+
   @CreateDateColumn({
     name: 'created_at',
     type: 'timestamp',
@@ -34,10 +37,9 @@ export class Comment {
   })
   updatedAt: Date;
 
-  // Removed foreign key relation to User to avoid foreign key constraint errors
-  // @ManyToOne(() => User)
-  // @JoinColumn({ name: 'user_id' })
-  // user: User;
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 
   @ManyToOne(() => Song)
   @JoinColumn({ name: 'song_id' })

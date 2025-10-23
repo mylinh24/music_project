@@ -176,6 +176,20 @@ const Header = () => {
                     >
                       Quản lý Artists
                     </Link>
+                    <Link
+                      to="/admin/comments"
+                      className="block px-4 py-2 text-white hover:bg-gray-700"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Quản lý Comments
+                    </Link>
+                    <Link
+                      to="/admin/vip-packages"
+                      className="block px-4 py-2 text-white hover:bg-gray-700"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Quản lý Gói VIP
+                    </Link>
                   </>
                 )}
                 <button

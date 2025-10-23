@@ -88,6 +88,12 @@ const HeaderAdmin = () => {
         <Link to="/admin/artists" className="text-red-400 hover:underline font-semibold">
           Quản lý Artists
         </Link>
+        <Link to="/admin/comments" className="text-red-400 hover:underline font-semibold">
+          Quản lý Comments
+        </Link>
+        <Link to="/admin/vip-packages" className="text-red-400 hover:underline font-semibold">
+          Quản lý Gói VIP
+        </Link>
       </div>
 
       {/* Bên phải */}

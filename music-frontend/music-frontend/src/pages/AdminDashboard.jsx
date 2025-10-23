@@ -10,9 +10,9 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({});
   const [vipPurchases, setVipPurchases] = useState([]);
   const [newCustomers, setNewCustomers] = useState({ count: 0, customers: [] });
-        const [topPackages, setTopPackages] = useState([]);
-        const [contributionStats, setContributionStats] = useState({ totalPoints: 0, pointsList: [] });
-        const [purchasesOffset, setPurchasesOffset] = useState(0);
+  const [topPackages, setTopPackages] = useState([]);
+  const [contributionStats, setContributionStats] = useState({ totalPoints: 0, pointsList: [] });
+  const [purchasesOffset, setPurchasesOffset] = useState(0);
   const [hasMorePurchases, setHasMorePurchases] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [monthlyRevenue, setMonthlyRevenue] = useState({ labels: [], values: [] });
@@ -76,6 +76,7 @@ const AdminDashboard = () => {
       <div className="container mx-auto px-4 py-8 pt-20 pb-24">
         <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
         <div className="mb-6">
+
           <h2 className="text-2xl font-bold mb-4">Notifications</h2>
           <div className="bg-gray-800 p-4 rounded-lg max-h-64 overflow-y-auto">
             {notifications.length === 0 ? (
@@ -103,10 +104,13 @@ const AdminDashboard = () => {
             <h2 className="text-xl font-semibold mb-2">Artists</h2>
             <p className="text-3xl font-bold text-purple-400">{stats.artists}</p>
           </Link>
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:bg-gray-700 transition-all duration-200">
+          <Link to="/admin/comments" className="bg-gray-800 p-6 rounded-lg shadow-lg hover:bg-gray-700 transition-all duration-200 block">
             <h2 className="text-xl font-semibold mb-2">Comments</h2>
             <p className="text-3xl font-bold text-red-400">{stats.comments}</p>
-          </div>
+            {stats.pendingComments > 0 && (
+              <p className="text-sm text-yellow-400 mt-1">Chờ duyệt: {stats.pendingComments}</p>
+            )}
+          </Link>
         </div>
         <div className="mt-8">
           <h2 className="text-2xl font-bold mb-4">Thống kê</h2>
@@ -194,7 +198,7 @@ const AdminDashboard = () => {
             <div className="mb-6">
               <h3 className="text-xl font-semibold mb-4">VIP Purchases & Top Packages</h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <VipPurchasesTable purchases={vipPurchases} onLoadMore={() => {}} hasMore={hasMorePurchases} />
+                <VipPurchasesTable purchases={vipPurchases} onLoadMore={() => { }} hasMore={hasMorePurchases} />
                 <TopPackagesChart data={topPackages} />
               </div>
             </div>

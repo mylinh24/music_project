@@ -5,7 +5,7 @@ import { AdminGuard } from '../auth/admin.guard';
 @Controller('admin')
 @UseGuards(AdminGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService) { }
 
   // User management routes
   @Get('users')
@@ -131,5 +131,42 @@ export class AdminController {
   @Get('profile')
   getProfile(@Req() req: any) {
     return this.adminService.getProfile(req.user.userId);
+  }
+
+  // Comment management
+  @Get('comments')
+  getAllComments(@Query() query: any) {
+    return this.adminService.getAllComments(query);
+  }
+
+  @Delete('comments/:id')
+  deleteComment(@Param('id') id: string) {
+    return this.adminService.deleteComment(+id);
+  }
+
+  @Put('comments/:id/status')
+  updateCommentStatus(@Param('id') id: string, @Body() body: { status: 'pending' | 'approved' | 'rejected' }) {
+    return this.adminService.updateCommentStatus(+id, body.status);
+  }
+
+  // VIP Package management
+  @Get('vip-packages')
+  getAllVipPackages() {
+    return this.adminService.getAllVipPackages();
+  }
+
+  @Post('vip-packages')
+  createVipPackage(@Body() vipPackageData: any) {
+    return this.adminService.createVipPackage(vipPackageData);
+  }
+
+  @Put('vip-packages/:id')
+  updateVipPackage(@Param('id') id: string, @Body() updates: any) {
+    return this.adminService.updateVipPackage(+id, updates);
+  }
+
+  @Delete('vip-packages/:id')
+  deleteVipPackage(@Param('id') id: string) {
+    return this.adminService.deleteVipPackage(+id);
   }
 }

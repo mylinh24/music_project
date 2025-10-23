@@ -46,6 +46,7 @@ export const createComment = async (req, res) => {
             song_id,
             content,
             rating,
+            status: 'approved',
         });
 
         // Send notifications to admin
@@ -98,7 +99,7 @@ export const getCommentsBySong = async (req, res) => {
         const offset = (parseInt(page) - 1) * parseInt(limit);
 
         const { count, rows: comments } = await Comment.findAndCountAll({
-            where: { song_id },
+            where: { song_id, status: 'approved' },
             include: [
                 {
                     model: User,

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, MoreThanOrEqual } from 'typeorm';
+import { Repository, Between, MoreThanOrEqual, Brackets } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { Song } from '../entities/song.entity';
 import { Artist } from '../entities/artist.entity';
@@ -28,7 +28,7 @@ export class AdminService {
     @InjectRepository(VipPackage)
     private vipPackageRepository: Repository<VipPackage>,
     private webSocketGateway: WebSocketGateway,
-  ) {}
+  ) { }
 
   // User management
   async getAllUsers(): Promise<User[]> {
@@ -237,6 +237,7 @@ export class AdminService {
     const songCount = await this.songRepository.count();
     const artistCount = await this.artistRepository.count();
     const commentCount = await this.commentRepository.count();
+    const pendingComments = await this.commentRepository.count({ where: { status: 'pending' } });
     const totalRevenue = await this.vipPurchaseRepository.sum('amount') || 0;
     const newCustomers = await this.userRepository.count({
       where: {
@@ -248,6 +249,7 @@ export class AdminService {
       songs: songCount,
       artists: artistCount,
       comments: commentCount,
+      pendingComments,
       totalRevenue,
       newCustomers,
     };
@@ -351,5 +353,133 @@ export class AdminService {
       throw new NotFoundException('User not found');
     }
     return user;
+  }
+
+  // Comment management
+  async getAllComments(query: any): Promise<any> {
+    const { page = 1, limit = 10, status, song_id, search } = query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    let queryBuilder = this.commentRepository.createQueryBuilder('comment')
+      .leftJoinAndSelect('comment.user', 'user')
+      .leftJoinAndSelect('comment.song', 'song')
+      .orderBy('comment.createdAt', 'DESC')
+      .take(parseInt(limit))
+      .skip(offset);
+
+    if (status) {
+      queryBuilder = queryBuilder.andWhere('comment.status = :status', { status });
+    }
+    if (song_id) {
+      queryBuilder = queryBuilder.andWhere('comment.song_id = :song_id', { song_id: parseInt(song_id) });
+    }
+
+    // Add search functionality - match Express logic exactly
+    if (search) {
+      queryBuilder = queryBuilder.andWhere(
+        new Brackets(qb => {
+          qb.where('comment.content LIKE :search', { search: `%${search}%` })
+            .orWhere('CONCAT(user.firstName, \' \', user.lastName) LIKE :search', { search: `%${search}%` })
+            .orWhere('user.email LIKE :search', { search: `%${search}%` });
+        })
+      );
+    }
+
+    const [comments, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      comments,
+      pagination: {
+        current_page: parseInt(page),
+        total_pages: Math.ceil(total / parseInt(limit)),
+        total_comments: total,
+      },
+    };
+  }
+
+  async deleteComment(id: number): Promise<{ message: string }> {
+    const comment = await this.commentRepository.findOne({ where: { id } });
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+    await this.commentRepository.remove(comment);
+    return { message: 'Comment deleted successfully' };
+  }
+
+  async updateCommentStatus(id: number, status: 'pending' | 'approved' | 'rejected'): Promise<{ message: string }> {
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      throw new BadRequestException('Invalid status');
+    }
+    const comment = await this.commentRepository.findOne({ where: { id } });
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+    comment.status = status;
+    await this.commentRepository.save(comment);
+    return { message: 'Comment status updated successfully' };
+  }
+
+  // VIP Package management
+  async getAllVipPackages(): Promise<VipPackage[]> {
+    return this.vipPackageRepository.find({
+      order: { id: 'ASC' },
+    });
+  }
+
+  async createVipPackage(vipPackageData: Partial<VipPackage>): Promise<VipPackage> {
+    const { name, price, duration } = vipPackageData;
+    if (!name || !price || !duration) {
+      throw new BadRequestException('Name, price, and duration are required');
+    }
+    if (price <= 0 || duration <= 0) {
+      throw new BadRequestException('Price and duration must be positive numbers');
+    }
+
+    const vipPackage = this.vipPackageRepository.create({
+      name,
+      price,
+      duration,
+    });
+    return this.vipPackageRepository.save(vipPackage);
+  }
+
+  async updateVipPackage(id: number, updates: Partial<VipPackage>): Promise<{ message: string }> {
+    const vipPackage = await this.vipPackageRepository.findOne({ where: { id } });
+    if (!vipPackage) {
+      throw new NotFoundException('VIP package not found');
+    }
+
+    if (updates.name !== undefined) vipPackage.name = updates.name;
+    if (updates.price !== undefined) {
+      if (updates.price <= 0) {
+        throw new BadRequestException('Price must be a positive number');
+      }
+      vipPackage.price = updates.price;
+    }
+    if (updates.duration !== undefined) {
+      if (updates.duration <= 0) {
+        throw new BadRequestException('Duration must be a positive number');
+      }
+      vipPackage.duration = updates.duration;
+    }
+
+    await this.vipPackageRepository.save(vipPackage);
+    return { message: 'VIP package updated successfully' };
+  }
+
+  async deleteVipPackage(id: number): Promise<{ message: string }> {
+    const vipPackage = await this.vipPackageRepository.findOne({ where: { id } });
+    if (!vipPackage) {
+      throw new NotFoundException('VIP package not found');
+    }
+
+    // Check if package has associated purchases
+    const purchaseCount = await this.vipPurchaseRepository.count({ where: { vippackage_id: id } });
+    if (purchaseCount > 0) {
+      throw new BadRequestException('Cannot delete VIP package because it has associated purchases');
+    }
+
+    await this.vipPackageRepository.remove(vipPackage);
+    return { message: 'VIP package deleted successfully' };
   }
 }

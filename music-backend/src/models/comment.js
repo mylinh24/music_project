@@ -35,6 +35,11 @@ const Comment = sequelize.define('comment', {
             max: 5,
         },
     },
+    status: {
+        type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+        allowNull: false,
+        defaultValue: 'approved',
+    },
     created_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,

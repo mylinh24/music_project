@@ -253,6 +253,7 @@ export const getDashboardStats = async (req, res) => {
     const songCount = await Song.count();
     const artistCount = await Artist.count();
     const commentCount = await Comment.count();
+    const pendingComments = await Comment.count({ where: { status: 'pending' } });
     const totalRevenue = await VipPurchase.sum('amount') || 0;
     const newCustomers = await User.count({
       where: {
@@ -266,6 +267,7 @@ export const getDashboardStats = async (req, res) => {
       songs: songCount,
       artists: artistCount,
       comments: commentCount,
+      pendingComments,
       totalRevenue,
       newCustomers,
     });
@@ -381,6 +383,93 @@ export const getContributionPointsStats = async (req, res) => {
   }
 };
 
+// Comment management
+export const getAllComments = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status, song_id, search } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const whereClause = {};
+    if (status) whereClause.status = status;
+    if (song_id) whereClause.song_id = song_id;
+
+    // Add search functionality
+    if (search) {
+      whereClause[Op.or] = [
+        { content: { [Op.like]: `%${search}%` } },
+        Sequelize.literal(`CONCAT(\`user\`.\`firstName\`, ' ', \`user\`.\`lastName\`) LIKE '%${search}%'`),
+        Sequelize.literal(`\`user\`.\`email\` LIKE '%${search}%'`),
+      ];
+    }
+
+    const { count, rows: comments } = await Comment.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+        },
+        {
+          model: Song,
+          as: 'song',
+          attributes: ['id', 'title'],
+        },
+      ],
+      attributes: ['id', 'content', 'rating', 'status', 'created_at'],
+      limit: parseInt(limit),
+      offset,
+      order: [['created_at', 'DESC']],
+    });
+
+    res.json({
+      comments,
+      pagination: {
+        current_page: parseInt(page),
+        total_pages: Math.ceil(count / parseInt(limit)),
+        total_comments: count,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const deleteComment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const comment = await Comment.findByPk(id);
+    if (!comment) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+    await comment.destroy();
+    res.json({ message: 'Comment deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const updateCommentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    const comment = await Comment.findByPk(id);
+    if (!comment) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+    comment.status = status;
+    await comment.save();
+    res.json({ message: 'Comment status updated successfully' });
+  } catch (error) {
+    console.error('Error updating comment status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Monthly revenue stats
 export const getMonthlyRevenueStats = async (req, res) => {
   try {
@@ -400,6 +489,96 @@ export const getMonthlyRevenueStats = async (req, res) => {
     res.json({ labels, values });
   } catch (error) {
     console.error('Error fetching monthly revenue stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// VIP Package management
+export const getAllVipPackages = async (req, res) => {
+  try {
+    const packages = await VipPackage.findAll({
+      attributes: ['id', 'name', 'price', 'duration'],
+      order: [['id', 'ASC']],
+    });
+    res.json(packages);
+  } catch (error) {
+    console.error('Error fetching VIP packages:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const createVipPackage = async (req, res) => {
+  try {
+    const { name, price, duration } = req.body;
+    if (!name || !price || !duration) {
+      return res.status(400).json({ error: 'Name, price, and duration are required' });
+    }
+    if (price <= 0 || duration <= 0) {
+      return res.status(400).json({ error: 'Price and duration must be positive numbers' });
+    }
+
+    const vipPackage = await VipPackage.create({
+      name,
+      price,
+      duration,
+    });
+    res.status(201).json(vipPackage);
+  } catch (error) {
+    console.error('Error creating VIP package:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const updateVipPackage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, price, duration } = req.body;
+
+    const vipPackage = await VipPackage.findByPk(id);
+    if (!vipPackage) {
+      return res.status(404).json({ error: 'VIP package not found' });
+    }
+
+    if (name !== undefined) vipPackage.name = name;
+    if (price !== undefined) {
+      if (price <= 0) {
+        return res.status(400).json({ error: 'Price must be a positive number' });
+      }
+      vipPackage.price = price;
+    }
+    if (duration !== undefined) {
+      if (duration <= 0) {
+        return res.status(400).json({ error: 'Duration must be a positive number' });
+      }
+      vipPackage.duration = duration;
+    }
+
+    await vipPackage.save();
+    res.json({ message: 'VIP package updated successfully' });
+  } catch (error) {
+    console.error('Error updating VIP package:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const deleteVipPackage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vipPackage = await VipPackage.findByPk(id);
+    if (!vipPackage) {
+      return res.status(404).json({ error: 'VIP package not found' });
+    }
+
+    // Check if package has associated purchases
+    const purchaseCount = await VipPurchase.count({ where: { vippackage_id: id } });
+    if (purchaseCount > 0) {
+      return res.status(400).json({ error: 'Cannot delete VIP package because it has associated purchases' });
+    }
+
+    await vipPackage.destroy();
+    res.json({ message: 'VIP package deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting VIP package:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

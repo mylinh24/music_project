@@ -14,7 +14,7 @@ export class CommentsService {
     private userRepository: Repository<User>,
     @InjectRepository(Song)
     private songRepository: Repository<Song>,
-  ) {}
+  ) { }
 
   async createComment(userId: number, body: { song_id: number; content: string; rating: number }) {
     const { song_id, content, rating } = body;
@@ -47,6 +47,7 @@ export class CommentsService {
       song_id,
       content,
       rating,
+      status: 'approved', // Default to approved
     });
 
     const savedComment = await this.commentRepository.save(comment);
@@ -61,7 +62,7 @@ export class CommentsService {
   async getCommentsBySong(songId: number, page: number = 1, limit: number = 10) {
     const offset = (page - 1) * limit;
     const [comments, total] = await this.commentRepository.findAndCount({
-      where: { song_id: songId },
+      where: { song_id: songId, status: 'approved' },
       relations: ['user'],
       order: { createdAt: 'DESC' },
       take: limit,

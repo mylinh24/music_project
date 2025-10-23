@@ -95,10 +95,10 @@ const AudioPlayer = () => {
       }
     };
 
-  // Xử lý sự kiện seeked (khi người dùng tua)
-  const handleSeeked = () => {
-    // No-op since listening session logic removed
-  };
+    // Xử lý sự kiện seeked (khi người dùng tua)
+    const handleSeeked = () => {
+      // No-op since listening session logic removed
+    };
 
     // Gắn sự kiện
     audio.addEventListener('timeupdate', updateProgress);
@@ -120,10 +120,10 @@ const AudioPlayer = () => {
 
     const audio = audioRef.current;
 
-  // Nếu đang chuyển từ pause sang play và chưa có session active
-  if (!isPlaying && audio) {
-    // no-op
-  }
+    // Nếu đang chuyển từ pause sang play và chưa có session active
+    if (!isPlaying && audio) {
+      // no-op
+    }
 
     dispatch(setIsPlaying(!isPlaying));
   };
@@ -221,7 +221,7 @@ const AudioPlayer = () => {
             {currentSong?.title || 'Chưa chọn bài hát'}
           </p>
           <p
-            className="text-sm text-gray-400 cursor-pointer hover:underline"
+            className="text-sm text-gray-400"
             onClick={handleArtistClick}
           >
             {currentSong?.artist_name || currentSong?.artist?.name || 'Không có nghệ sĩ'}

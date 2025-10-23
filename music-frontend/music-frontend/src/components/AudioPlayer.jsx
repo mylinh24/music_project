@@ -158,7 +158,7 @@ const AudioPlayer = () => {
     }
   }, [dispatch]);
 
-  // Cập nhật nguồn âm thanh
+  // Cập nhật nguồn âm thanh khi chuyển bài hát
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !currentSong?.audio_url) return;
@@ -179,13 +179,20 @@ const AudioPlayer = () => {
       dispatch(setProgress(0));
     }
 
-    audio.volume = volume;
-    audio.playbackRate = playbackRate;
     audio.currentTime = progress;
 
     // THAY ĐỔI: Gọi resetListeningSession ngay khi chuyển bài mới để set isActive: true và đảm bảo session active cho autoplay
     resetListeningSession(0);
-  }, [currentSong, volume, playbackRate, dispatch, resetListeningSession]);
+  }, [currentSong, dispatch, resetListeningSession]);
+
+  // Cập nhật volume và playbackRate riêng biệt, không reset session
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.volume = volume;
+    audio.playbackRate = playbackRate;
+  }, [volume, playbackRate]);
 
   // Xử lý phát/dừng
   useEffect(() => {
@@ -348,8 +355,10 @@ const AudioPlayer = () => {
 
   const handleArtistClick = () => {
     const artistId = currentSong?.artist?.id || currentSong?.artist_id;
+
     if (artistId) {
       navigate(`/artist/${artistId}`);
+
     }
   };
 
@@ -369,7 +378,7 @@ const AudioPlayer = () => {
             {currentSong?.title || 'Chưa chọn bài hát'}
           </p>
           <p
-            className="text-sm text-gray-400 cursor-pointer hover:underline"
+            className="text-sm text-gray-400"
             onClick={handleArtistClick}
           >
             {currentSong?.artist_name || currentSong?.artist?.name || 'Không có nghệ sĩ'}

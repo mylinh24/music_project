@@ -49,6 +49,7 @@ let CommentsService = class CommentsService {
             song_id,
             content,
             rating,
+            status: 'approved',
         });
         const savedComment = await this.commentRepository.save(comment);
         return this.commentRepository.findOne({
@@ -59,7 +60,7 @@ let CommentsService = class CommentsService {
     async getCommentsBySong(songId, page = 1, limit = 10) {
         const offset = (page - 1) * limit;
         const [comments, total] = await this.commentRepository.findAndCount({
-            where: { song_id: songId },
+            where: { song_id: songId, status: 'approved' },
             relations: ['user'],
             order: { createdAt: 'DESC' },
             take: limit,

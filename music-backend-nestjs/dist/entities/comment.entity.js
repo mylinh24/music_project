@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Comment = void 0;
 const typeorm_1 = require("typeorm");
+const user_entity_1 = require("./user.entity");
 const song_entity_1 = require("./song.entity");
 let Comment = class Comment {
     id;
@@ -18,8 +19,10 @@ let Comment = class Comment {
     song_id;
     content;
     rating;
+    status;
     createdAt;
     updatedAt;
+    user;
     song;
 };
 exports.Comment = Comment;
@@ -44,6 +47,10 @@ __decorate([
     __metadata("design:type", Number)
 ], Comment.prototype, "rating", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'enum', enum: ['pending', 'approved', 'rejected'], default: 'approved' }),
+    __metadata("design:type", String)
+], Comment.prototype, "status", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({
         name: 'created_at',
         type: 'timestamp',
@@ -60,6 +67,11 @@ __decorate([
     }),
     __metadata("design:type", Date)
 ], Comment.prototype, "updatedAt", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => user_entity_1.User),
+    (0, typeorm_1.JoinColumn)({ name: 'user_id' }),
+    __metadata("design:type", user_entity_1.User)
+], Comment.prototype, "user", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => song_entity_1.Song),
     (0, typeorm_1.JoinColumn)({ name: 'song_id' }),

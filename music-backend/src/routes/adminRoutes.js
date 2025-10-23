@@ -20,7 +20,14 @@ import {
   getNewCustomers,
   getTopVipPackages,
   getContributionPointsStats,
-  getMonthlyRevenueStats
+  getMonthlyRevenueStats,
+  getAllComments,
+  deleteComment,
+  updateCommentStatus,
+  getAllVipPackages,
+  createVipPackage,
+  updateVipPackage,
+  deleteVipPackage
 } from '../controllers/adminController.js';
 import { requireAdmin } from '../middleware/auth.js';
 
@@ -58,5 +65,16 @@ router.get('/stats/vip-purchases', requireAdmin, getVipPurchasesList);
 router.get('/stats/new-customers', requireAdmin, getNewCustomers);
 router.get('/stats/top-packages', requireAdmin, getTopVipPackages);
 router.get('/stats/contribution-points', requireAdmin, getContributionPointsStats);
+
+// Comment management routes
+router.get('/comments', requireAdmin, getAllComments);
+router.delete('/comments/:id', requireAdmin, deleteComment);
+router.put('/comments/:id/status', requireAdmin, updateCommentStatus);
+
+// VIP Package management routes
+router.post('/vip-packages', requireAdmin, createVipPackage);
+router.put('/vip-packages/:id', requireAdmin, updateVipPackage);
+router.delete('/vip-packages/:id', requireAdmin, deleteVipPackage);
+router.get('/vip-packages', requireAdmin, getAllVipPackages);
 
 export default router;

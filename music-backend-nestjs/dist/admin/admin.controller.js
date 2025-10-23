@@ -93,6 +93,27 @@ let AdminController = class AdminController {
     getProfile(req) {
         return this.adminService.getProfile(req.user.userId);
     }
+    getAllComments(query) {
+        return this.adminService.getAllComments(query);
+    }
+    deleteComment(id) {
+        return this.adminService.deleteComment(+id);
+    }
+    updateCommentStatus(id, body) {
+        return this.adminService.updateCommentStatus(+id, body.status);
+    }
+    getAllVipPackages() {
+        return this.adminService.getAllVipPackages();
+    }
+    createVipPackage(vipPackageData) {
+        return this.adminService.createVipPackage(vipPackageData);
+    }
+    updateVipPackage(id, updates) {
+        return this.adminService.updateVipPackage(+id, updates);
+    }
+    deleteVipPackage(id) {
+        return this.adminService.deleteVipPackage(+id);
+    }
 };
 exports.AdminController = AdminController;
 __decorate([
@@ -262,6 +283,56 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getProfile", null);
+__decorate([
+    (0, common_1.Get)('comments'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getAllComments", null);
+__decorate([
+    (0, common_1.Delete)('comments/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteComment", null);
+__decorate([
+    (0, common_1.Put)('comments/:id/status'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "updateCommentStatus", null);
+__decorate([
+    (0, common_1.Get)('vip-packages'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getAllVipPackages", null);
+__decorate([
+    (0, common_1.Post)('vip-packages'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "createVipPackage", null);
+__decorate([
+    (0, common_1.Put)('vip-packages/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "updateVipPackage", null);
+__decorate([
+    (0, common_1.Delete)('vip-packages/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteVipPackage", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.Controller)('admin'),
     (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
