@@ -7,10 +7,16 @@ import User from '../models/user.js'; // Import User model
 
 export const getLatestSongs = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 8;
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
     const songs = await Song.findAll({
+      where: {
+        release_date: {
+          [Sequelize.Op.gte]: twoWeeksAgo,
+        },
+      },
       order: [['release_date', 'DESC']],
-      limit: limit,
       attributes: ['id', 'title', 'audio_url', 'image_url', 'release_date', 'listen_count', 'exclusive'],
       include: [
         { model: Artist, as: 'artist', attributes: ['name'] },
@@ -71,7 +77,6 @@ export const getPopularSongs = async (req, res) => {
 
 export const getTrendingSongs = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 10;
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -88,7 +93,6 @@ export const getTrendingSongs = async (req, res) => {
       },
       group: ['song_id'],
       order: [[Sequelize.literal('listen_count'), 'DESC']],
-      limit: limit,
     });
 
     const songIds = trending.map(entry => entry.song_id);
