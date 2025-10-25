@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VipPurchase = void 0;
 const typeorm_1 = require("typeorm");
+const user_entity_1 = require("./user.entity");
 const vip_package_entity_1 = require("./vip-package.entity");
 let VipPurchase = class VipPurchase {
     id;
@@ -20,6 +21,7 @@ let VipPurchase = class VipPurchase {
     amount;
     points_used;
     vippackage_id;
+    user;
     vipPackage;
 };
 exports.VipPurchase = VipPurchase;
@@ -51,6 +53,11 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'vippackage_id', type: 'int', nullable: false }),
     __metadata("design:type", Number)
 ], VipPurchase.prototype, "vippackage_id", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => user_entity_1.User),
+    (0, typeorm_1.JoinColumn)({ name: 'user_id' }),
+    __metadata("design:type", user_entity_1.User)
+], VipPurchase.prototype, "user", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => vip_package_entity_1.VipPackage),
     (0, typeorm_1.JoinColumn)({ name: 'vippackage_id' }),

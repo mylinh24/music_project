@@ -108,6 +108,12 @@ router.post('/listen-history', async (req, res) => {
         // Increment song's listen_count regardless of login status
         await song.increment('listen_count', { by: 1, where: { id: song_id } });
 
+        // Fetch the song to get artist_id and increment artist's total_listens
+        const songRecord = await song.findByPk(song_id, { attributes: ['artist_id'] });
+        if (songRecord && songRecord.artist_id) {
+            await artist.increment('total_listens', { by: 1, where: { id: songRecord.artist_id } });
+        }
+
         res.status(201).json({ message: 'Listen recorded' });
     } catch (error) {
         console.error('Error recording listen:', error);

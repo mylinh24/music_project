@@ -25,6 +25,10 @@ export class VipPurchase {
   @Column({ name: 'vippackage_id', type: 'int', nullable: false })
   vippackage_id: number;
 
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'user_id' })
+  user: User;
+
   @ManyToOne(() => VipPackage)
   @JoinColumn({ name: 'vippackage_id' })
   vipPackage: VipPackage;

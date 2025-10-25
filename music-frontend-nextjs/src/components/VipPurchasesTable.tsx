@@ -4,9 +4,15 @@ import React from 'react';
 
 interface VipPurchase {
   id: number;
-  paymentDate: Date | null;
+  payment_date: Date | null;
   amount: number;
-  pointsUsed: number;
+  points_used: number;
+  user: {
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
   vipPackage: {
     id: number;
     name: string;
@@ -29,6 +35,7 @@ const VipPurchasesTable: React.FC<VipPurchasesTableProps> = ({ purchases, onLoad
           <thead>
             <tr>
               <th className="py-2 px-4 border-b">ID</th>
+              <th className="py-2 px-4 border-b">Người dùng</th>
               <th className="py-2 px-4 border-b">Gói VIP</th>
               <th className="py-2 px-4 border-b">Số tiền</th>
               <th className="py-2 px-4 border-b">Ngày thanh toán</th>
@@ -40,13 +47,16 @@ const VipPurchasesTable: React.FC<VipPurchasesTableProps> = ({ purchases, onLoad
               <tr key={purchase.id} className="hover:bg-gray-600">
                 <td className="py-2 px-4 border-b">{purchase.id}</td>
                 <td className="py-2 px-4 border-b">
+                  {purchase.user ? `${purchase.user.firstName} ${purchase.user.lastName} (${purchase.user.email})` : 'N/A'}
+                </td>
+                <td className="py-2 px-4 border-b">
                   {purchase.vipPackage?.name || 'N/A'}
                 </td>
                 <td className="py-2 px-4 border-b">{purchase.amount} VND</td>
                 <td className="py-2 px-4 border-b">
-                  {purchase.paymentDate ? new Date(purchase.paymentDate).toLocaleDateString() : 'N/A'}
+                  {purchase.payment_date ? new Date(purchase.payment_date).toLocaleDateString() : 'N/A'}
                 </td>
-                <td className="py-2 px-4 border-b">{purchase.pointsUsed}</td>
+                <td className="py-2 px-4 border-b">{purchase.points_used}</td>
               </tr>
             ))}
           </tbody>

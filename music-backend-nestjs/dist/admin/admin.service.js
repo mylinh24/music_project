@@ -249,13 +249,27 @@ let AdminService = class AdminService {
         return { totalRevenue };
     }
     async getVipPurchasesList(limit = 10, offset = 0) {
-        return this.vipPurchaseRepository.find({
-            relations: ['vipPackage'],
-            select: ['id', 'payment_date', 'amount', 'points_used'],
-            take: limit,
-            skip: offset,
-            order: { payment_date: 'DESC' },
-        });
+        return this.vipPurchaseRepository
+            .createQueryBuilder('vp')
+            .leftJoinAndSelect('vp.user', 'user')
+            .leftJoinAndSelect('vp.vipPackage', 'vipPackage')
+            .select([
+            'vp.id',
+            'vp.payment_date',
+            'vp.amount',
+            'vp.points_used',
+            'user.id',
+            'user.email',
+            'user.firstName',
+            'user.lastName',
+            'vipPackage.id',
+            'vipPackage.name',
+            'vipPackage.price',
+        ])
+            .take(limit)
+            .skip(offset)
+            .orderBy('vp.payment_date', 'DESC')
+            .getMany();
     }
     async getNewCustomers(days = 30) {
         const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);

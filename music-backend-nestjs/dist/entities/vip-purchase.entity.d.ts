@@ -1,3 +1,4 @@
+import { User } from './user.entity';
 import { VipPackage } from './vip-package.entity';
 export declare class VipPurchase {
     id: number;
@@ -7,5 +8,6 @@ export declare class VipPurchase {
     amount: number;
     points_used: number;
     vippackage_id: number;
+    user: User;
     vipPackage: VipPackage;
 }

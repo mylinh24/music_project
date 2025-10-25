@@ -21,9 +21,15 @@ interface Stats {
 
 interface VipPurchase {
   id: number;
-  paymentDate: Date | null;
+  payment_date: Date | null;
   amount: number;
-  pointsUsed: number;
+  points_used: number;
+  user: {
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
   vipPackage: {
     id: number;
     name: string;
