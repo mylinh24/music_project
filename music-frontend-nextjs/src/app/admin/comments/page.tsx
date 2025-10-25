@@ -9,7 +9,7 @@ interface Comment {
     content: string;
     rating: number;
     status: 'pending' | 'approved' | 'rejected';
-    created_at: string;
+    createdAt: string;
     user: {
         id: number;
         firstName: string;
@@ -223,7 +223,7 @@ export default function AdminComments() {
                                             {getStatusBadge(comment.status)}
                                         </td>
                                         <td className="px-4 py-3">
-                                            {new Date(comment.created_at).toLocaleDateString('vi-VN')}
+                                            {new Date(comment.createdAt).toLocaleDateString('vi-VN')}
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex gap-2">
